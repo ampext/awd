@@ -356,21 +356,34 @@ def GetAllItems():
         items.append([label, asin, country])
 
     return items
+    
+def RemoveSequentialDuplicates(values):
+    return [x for i, x in enumerate(values) if i == 0 or (i > 0 and x != values[i - 1])]
 
 def GetNLastPriceChanges(asin, n):
     query = QtSql.QSqlQuery()
-    query.prepare("SELECT price FROM prices WHERE asin = :asin ORDER BY date DESC LIMIT :n")
-    query.bindValue(":asin", asin)
-    query.bindValue(":n", n)
-    query.exec_()
 
     prices = []
+    end_date = ""
 
-    if query.lastError().isValid(): return prices
+    while len(prices) < n:
+        if end_date == "": query.prepare("SELECT price, date FROM prices WHERE asin = :asin AND price != 0 ORDER BY date DESC LIMIT :n")
+        else:
+            query.prepare("SELECT price, date FROM prices WHERE asin = :asin AND price != 0 AND date < :date ORDER BY date DESC LIMIT :n")
+            query.bindValue(":date", end_date)
 
-    while query.next():
-        prices.append(int(query.record().field("price").value()))
+        query.bindValue(":asin", asin)
+        query.bindValue(":n", n)
+        query.exec_()
+
+        if query.lastError().isValid() or not query.first(): break
+        query.previous()
+
+        while query.next():
+            prices.append(int(query.record().field("price").value()))
+            end_date = query.record().field("date").value()
+
+        prices = RemoveSequentialDuplicates(prices)
 
     prices.reverse()
-
     return prices
