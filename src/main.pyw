@@ -2,7 +2,6 @@
 
 from PySide import QtCore, QtGui
 from mainform import MainForm
-from optparse import OptionParser
 from argparse import ArgumentParser
 
 import sys
