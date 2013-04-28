@@ -247,10 +247,10 @@ def UpdateDatabase(accessKey, secretKey, associateTag):
         return [cntr, up, down, FormatAWSErrors(all_errors, 50)]
     
     except AWSError, error:
-        error_lst = FormatAWSErrors(error.errors(), 50)
+        error_lst = FormatAWSErrors(error.GetErrors(), 50)
         error_msg = "Error: " + str(error)
         
-        if len(error_str) > 0: error_msg = error_msg + "\n" + error_lst
+        if len(error_lst) > 0: error_msg = error_msg + "\n" + error_lst
         return [cntr, up, down, error_msg]
     
 def GetMaxItemPrice(asin):

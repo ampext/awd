@@ -16,7 +16,7 @@ class AWSError(Exception):
     def __str__(self):
         return self.text
         
-    def errors(self):
+    def GetErrors(self):
         return self.errors
     
 def CreateRESTSignature(text, key):
@@ -73,6 +73,7 @@ def GetPrice(asins, country, accessKey, secretKey, associateTag):
         connection.close()
         
         errors = GetErrors(doc)
+        print(request_url)
     
     return (prices, errors)
 

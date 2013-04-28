@@ -248,6 +248,7 @@ class MainForm(QtGui.QDialog):
     def DoUpdateItems(self, cntr, up, down, error):
         if error != "" and cntr == 0:
             notify.Notify(error, self, self.sys_notify)
+            print(error)
             return
         
         if not self.showNotifications: return
