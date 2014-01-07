@@ -7,6 +7,10 @@ import os
 import helper
 import locale
 
+def safe_int(str_val, def_val = 0):
+    try: return int(str_val)
+    except ValueError: return def_val
+
 def CheckDatabase(filename):
     if not QtCore.QFile.exists(filename): return False
     
@@ -260,7 +264,8 @@ def GetMaxItemPrice(asin):
     query.exec_()
     
     if query.lastError().isValid(): raise Exception(query.lastError().text())
-    if query.next(): return int(query.record().field("max").value())
+    if query.next(): return safe_int(query.record().field("max").value())
+    
     return 0
 
 def GetMinItemPrice(asin):
@@ -270,7 +275,8 @@ def GetMinItemPrice(asin):
     query.exec_()
     
     if query.lastError().isValid(): raise Exception(query.lastError().text())
-    if query.next(): return int(query.record().field("min").value())
+    if query.next(): return safe_int(query.record().field("min").value())
+        
     return 0
     
 def UpdateItem(asin, price, currency):
@@ -306,8 +312,8 @@ def UpdateItem(asin, price, currency):
     current_price = 0
     
     if query.next(): 
-        last = int(query.record().field("last").value())
-        current_price = int(query.record().field("price").value())
+        last = safe_int(query.record().field("last").value())
+        current_price = safe_int(query.record().field("price").value())
     if last == 0: last = price
     if current_price == 0: current_price = price
     
@@ -380,7 +386,7 @@ def GetNLastPriceChanges(asin, n):
         query.previous()
 
         while query.next():
-            prices.append(int(query.record().field("price").value()))
+            prices.append(safe_int(query.record().field("price").value()))
             end_date = query.record().field("date").value()
 
         prices = RemoveSequentialDuplicates(prices)
