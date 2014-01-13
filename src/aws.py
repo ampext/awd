@@ -25,13 +25,48 @@ def CreateRESTSignature(text, key):
 
     return urllib.quote(sig)
 
-def MakeRESTString(params, country):
-    params = params.split("&")
-    params.sort()
-    return ["GET", "webservices.amazon." +  db_helper.GetDomain(country), "/onca/xml", "&".join(params)]
+def MakeRESTRequest(params_dict, country):
+    params_list = []
+    
+    for k, v in params_dict.iteritems():
+        params_list.append(k + "=" + urllib.quote(v))
+    
+    params_list.sort()
+    params = "&".join(params_list)
+    
+    return ["GET", "webservices.amazon." +  db_helper.GetDomain(country), "/onca/xml", params]
+
+def DoAWSRequest(params_dict, country, accessKey, secretKey, associateTag):
+    params_dict["Service"] = "AWSECommerceService"
+    params_dict["AWSAccessKeyId"] = accessKey
+    params_dict["AssociateTag"] = associateTag
+    params_dict["Timestamp"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    
+    rest = MakeRESTRequest(params_dict, country)
+    signature = CreateRESTSignature("\n".join(rest), secretKey)
+    params = rest[3] + "&Signature=" + signature
+    request_url = rest[1] + rest[2] + "?" + params
+    
+    connection = httplib.HTTPConnection(rest[1])
+    connection.request(rest[0], rest[2] + "?" + params)
+    result = connection.getresponse()
+    content = result.read()
+    connection.close()
+    
+    if result.status != 200 : 
+        text = "server returns code " + str(result.status)
+        errors = []
+   
+        error = ParseLookupErrorResponse(xml.dom.minidom.parseString(content))
+        if error.has_key("msg"): errors.append(error)
+
+        raise AWSError(text, request_url, errors)
+    
+    return content, request_url
+
 
 def GetPrice(asins, country, accessKey, secretKey, associateTag):
-    if len(asins) == 0 or country == "": return []
+    if len(asins) == 0 or not country: return []
     
     asins = map(unicode.encode, asins)
     country = country.encode()
@@ -39,41 +74,22 @@ def GetPrice(asins, country, accessKey, secretKey, associateTag):
     maxAsins = 10
     asinsList = SplitList(asins, maxAsins)
     prices = []
-   
+    params = {}
+
     for asins in asinsList:
-        params = "Service=AWSECommerceService&Operation=ItemLookup&AWSAccessKeyId=" + accessKey + "&AssociateTag=" + associateTag + "&ResponseGroup=OfferFull&ItemId=" + ",".join(asins)
-        params += "&Timestamp=" + datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-        params = urllib.quote(params, "=&")
-        rest = MakeRESTString(params, country)
-        signature = CreateRESTSignature("\n".join(rest), secretKey)
-        params = rest[3]
-        params += "&Signature=" + signature
+        params["Operation"] = "ItemLookup"    
+        params["ResponseGroup"] = "OfferFull"   
+        params["ItemId"] = ",".join(asins);
         
-        connection = httplib.HTTPConnection(rest[1])
-        connection.request(rest[0], rest[2] + "?" + params)
+        result, request_url = DoAWSRequest(params, country, accessKey, secretKey, associateTag)
         
-        request_url = rest[1] + rest[2] + "?" + params
-        res = connection.getresponse()
-        
-        if res.status != 200 : 
-            text = "server returns code " + str(res.status)
-            errors = []
-            
-            error = ParseLookupErrorResponse(xml.dom.minidom.parseString(res.read()))
-            if error.has_key("msg"): errors.append(error)
-            
-            raise AWSError(text, request_url, errors)
-        
-        doc = xml.dom.minidom.parseString(res.read())
+        doc = xml.dom.minidom.parseString(result)
         if not IsValidResponse(doc): raise AWSError("Invalid response", request_url, GetErrors(doc))
         
         try: prices = prices + GetPricesFromResponse(doc)
         except Exception, e: raise AWSError(str(e), request_url)
-        
-        connection.close()
-        
+
         errors = GetErrors(doc)
-        print(request_url)
     
     return (prices, errors)
 
