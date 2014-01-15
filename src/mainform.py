@@ -264,7 +264,7 @@ class MainForm(QtGui.QDialog):
         if form.exec_() == QtGui.QDialog.Accepted: self.LoadSettings()
         
     def SaveSettings(self):
-        self.settings.setValue("mainform size", self.size())
+        self.settings.setValue("mainform_size", self.size())
         self.settings.sync()
             
     def LoadSettings(self):
@@ -274,7 +274,7 @@ class MainForm(QtGui.QDialog):
         self.accessKey = str(self.settings.value("access_key", ""))
         self.secretKey = str(self.settings.value("secret_key", ""))
         self.associateTag = str(self.settings.value("associate_tag", ""))
-        self.resize(self.settings.value("mainform size", QtCore.QSize(640, 200)))
+        self.resize(self.settings.value("mainform_size", QtCore.QSize(640, 200)))
         self.sys_notify = to_bool(self.settings.value("sys_notify", "false"))
         
     def OnNotify(self):
