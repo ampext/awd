@@ -1,6 +1,7 @@
 from PySide import QtCore
 
 config_dir = None
+debug_mode = False
 
 def GetConfigDir():
     if config_dir == None: return QtCore.QDir.homePath() + QtCore.QDir.separator() + ".awd"

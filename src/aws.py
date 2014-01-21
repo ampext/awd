@@ -1,4 +1,5 @@
 from datetime import datetime
+from collections import namedtuple
 import httplib
 import hashlib
 import urllib
@@ -6,6 +7,8 @@ import hmac
 import base64
 import xml.dom.minidom
 import db_helper
+
+RESTRequest = namedtuple("RESTRequest", ["method", "host", "url", "params"])
 
 class AWSError(Exception):
     def __init__(self, text, request = "", errors = []):
@@ -25,7 +28,7 @@ def CreateRESTSignature(text, key):
 
     return urllib.quote(sig)
 
-def MakeRESTRequest(params_dict, country):
+def CreateRESTRequest(params_dict, country):
     params_list = []
     
     for k, v in params_dict.iteritems():
@@ -34,21 +37,23 @@ def MakeRESTRequest(params_dict, country):
     params_list.sort()
     params = "&".join(params_list)
     
-    return ["GET", "webservices.amazon." +  db_helper.GetDomain(country), "/onca/xml", params]
+    return RESTRequest("GET", "webservices.amazon." + db_helper.GetDomain(country), "/onca/xml", params)
 
-def DoAWSRequest(params_dict, country, accessKey, secretKey, associateTag):
+def FillParams(params_dict, accessKey, secretKey, associateTag):
     params_dict["Service"] = "AWSECommerceService"
     params_dict["AWSAccessKeyId"] = accessKey
     params_dict["AssociateTag"] = associateTag
     params_dict["Timestamp"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-    
-    rest = MakeRESTRequest(params_dict, country)
+
+def DoAWSRequest(params_dict, country, accessKey, secretKey, associateTag):
+    FillParams(params_dict, accessKey, secretKey, associateTag)
+    rest = CreateRESTRequest(params_dict, country)
     signature = CreateRESTSignature("\n".join(rest), secretKey)
-    params = rest[3] + "&Signature=" + signature
-    request_url = rest[1] + rest[2] + "?" + params
+    params = rest.params + "&Signature=" + signature
+    request_url = rest.host + rest.url + "?" + params
     
-    connection = httplib.HTTPConnection(rest[1])
-    connection.request(rest[0], rest[2] + "?" + params)
+    connection = httplib.HTTPConnection(rest.host)
+    connection.request(rest.method, rest.url + "?" + params)
     result = connection.getresponse()
     content = result.read()
     connection.close()

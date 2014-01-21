@@ -1,6 +1,7 @@
 from PySide import QtGui, QtCore, QtSql
 from itemform import ItemForm
 from settingsform import SettingsForm, to_bool
+from requestform import RequestForm
 from aboutform import AboutForm
 from threading import Thread
 from functools import partial
@@ -99,6 +100,11 @@ class MainForm(QtGui.QDialog):
         
         self.trayMenu.addAction(self.itemsAction)
         self.trayMenu.addAction(self.settingsAction)
+        
+        if helper.debug_mode:
+            self.trayMenu.addSeparator()
+            self.trayMenu.addAction(self.builderAction)
+        
         self.trayMenu.addSeparator()
         self.trayMenu.addAction(self.aboutAction)
         self.trayMenu.addAction(self.quitAction)
@@ -119,6 +125,10 @@ class MainForm(QtGui.QDialog):
 
         self.aboutAction = QtGui.QAction(self.tr("About..."), self)
         self.aboutAction.triggered.connect(self.OnAbout)
+        
+        if helper.debug_mode:
+            self.builderAction = QtGui.QAction(self.tr("Build request..."), self)
+            self.builderAction.triggered.connect(self.OnBuildRequest)
 
     def OnTimer(self):
         self.OnUpdateItems()
@@ -262,6 +272,10 @@ class MainForm(QtGui.QDialog):
     def OnShowSettings(self):
         form = SettingsForm(self, self.settings)
         if form.exec_() == QtGui.QDialog.Accepted: self.LoadSettings()
+        
+    def OnBuildRequest(self):
+        form = RequestForm(self, self.icons, self.accessKey, self.secretKey, self.associateTag)
+        form.exec_()
         
     def SaveSettings(self):
         self.settings.setValue("mainform_size", self.size())
