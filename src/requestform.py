@@ -1,4 +1,4 @@
-from PySide import QtGui, QtCore
+from PySide import QtGui, QtCore, QtXml
 from aws import FillParams, CreateRESTRequest, CreateRESTSignature, RESTRequest
 import db_helper
 import httplib
@@ -12,18 +12,31 @@ class RequestForm(QtGui.QDialog):
         self.associateTag = associateTag
 
         self.paramsEdit = QtGui.QLineEdit(self)
+        self.paramsEdit.textChanged.connect(self.OnParamsTextChanged)
+        
         self.comboBox = QtGui.QComboBox(self)
+        self.comboBox.currentIndexChanged.connect(self.OnCountryChanged)
+        
         self.requestText = QtGui.QPlainTextEdit(self)
         self.outputText = QtGui.QPlainTextEdit(self)
+        
         self.fetchButton = QtGui.QPushButton(self.tr("Fetch"))
+        self.fetchButton.clicked.connect(self.OnFetch)
+        
+        self.indentCheck = QtGui.QCheckBox(self.tr("Indent XML Output"))
+        
+        self.wwCheck = QtGui.QCheckBox(self.tr("Dynamic Word Wrap"))
+        self.wwCheck.stateChanged.connect(self.OnWordWrap)
 
         for country in db_helper.GetAmazonCountries():
             if icons.has_key(country): self.comboBox.addItem(icons[country], country)
             else: self.comboBox.addItem(country)
 
+        self.paramsEdit.setText("Operation=ItemLookup&ResponseGroup=OfferFull&ItemId=1234567")
         self.requestText.setReadOnly(True)
         self.outputText.setReadOnly(True)
-
+        self.outputText.setWordWrapMode(QtGui.QTextOption.NoWrap)
+        self.indentCheck.setChecked(True)
         self.requestText.setMaximumHeight(100)
         self.requestText.setMinimumWidth(500)
                 
@@ -32,25 +45,25 @@ class RequestForm(QtGui.QDialog):
         sizePolicy.setVerticalStretch(1)
         self.outputText.setSizePolicy(sizePolicy)
 
-        hLayout = QtGui.QHBoxLayout()
-        hLayout.addWidget(self.paramsEdit)
-        hLayout.addWidget(self.comboBox)
+        paramsLayout = QtGui.QHBoxLayout()
+        paramsLayout.addWidget(self.paramsEdit)
+        paramsLayout.addWidget(self.comboBox)
 
         formLayout = QtGui.QFormLayout()
-        formLayout.addRow(self.tr("Params"), hLayout)
+        formLayout.addRow(self.tr("Params"), paramsLayout)
         formLayout.addRow(self.tr("Request"), self.requestText)
+        
+        formatLayout = QtGui.QHBoxLayout()
+        formatLayout.addWidget(self.indentCheck)
+        formatLayout.addWidget(self.wwCheck)
+        formatLayout.addStretch(1)
 
         layout = QtGui.QVBoxLayout()
 
         layout.addLayout(formLayout)
+        layout.addLayout(formatLayout)
         layout.addWidget(self.fetchButton)
         layout.addWidget(self.outputText)
-        
-        self.paramsEdit.textChanged.connect(self.OnParamsTextChanged)
-        self.fetchButton.clicked.connect(self.OnFetch)
-        self.comboBox.currentIndexChanged.connect(self.OnCountryChanged)
-        
-        self.paramsEdit.setText("Operation=ItemLookup&ResponseGroup=OfferFull&ItemId=1234567")
         
         self.setLayout(layout)
         self.setWindowTitle(self.tr("Request Builder"))
@@ -58,6 +71,10 @@ class RequestForm(QtGui.QDialog):
 
     def OnCountryChanged(self, index):
         self.OnParamsTextChanged(self.paramsEdit.text())
+        
+    def OnWordWrap(self, state):
+        if state == QtCore.Qt.CheckState.Checked: self.outputText.setWordWrapMode(QtGui.QTextOption.WordWrap)
+        else: self.outputText.setWordWrapMode(QtGui.QTextOption.NoWrap)
 
     def OnParamsTextChanged(self, text):        
         if not text:
@@ -91,4 +108,11 @@ class RequestForm(QtGui.QDialog):
         connection.close()
         
         if result.status != 200: self.outputText.clear()
-        else: self.outputText.setPlainText(content)
+        else:
+            if self.indentCheck.isChecked():
+                doc = QtXml.QDomDocument()
+                doc.setContent(content)
+                content = doc.toString(4)
+                
+            self.outputText.setPlainText(content)
+        
