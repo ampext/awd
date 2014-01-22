@@ -53,7 +53,7 @@ class AboutForm(QtGui.QDialog):
 
         aboutLayout = QtGui.QHBoxLayout(aboutTab)
         aboutLabel = QtGui.QLabel(aboutTab)
-        aboutLabel.setText("<html><body>AWD - Amazon Watch Dog<br><br>(c) 2010 - 2012 Artem Semenov<br><br>License: GNU General Public License Version 3</body></html>")
+        aboutLabel.setText("<html><body>AWD - Amazon Watch Dog<br><br>(c) 2010 - 2014 Artem Semenov<br><br>License: GNU General Public License Version 3</body></html>")
         aboutLayout.addWidget(aboutLabel)
 
         authorsTab = QtGui.QWidget()
