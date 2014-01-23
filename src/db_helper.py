@@ -149,6 +149,17 @@ def GetItemLabelAndCountry(asin):
     
     return [query.record().field("label").value(), query.record().field("country").value()] 
 
+def GetItemCountry(asin):
+    query = QtSql.QSqlQuery()
+    query.prepare("SELECT country FROM main WHERE asin = :asin")
+    query.bindValue(":asin", asin)
+    query.exec_()
+    
+    if LastError(query, True): return ""
+    if not query.next(): return ""
+    
+    return query.record().field("country").value()
+
 def GetAmazonCountries():
     return ["us", "uk", "de", "fr", "jp", "ca", "cn"]
 

@@ -149,6 +149,19 @@ class MainForm(QtGui.QDialog):
     def closeEvent(self, event):
         self.hide()
         event.ignore()
+        
+    def contextMenuEvent(self, event):
+        asin = self.GetSelectedASIN()
+        
+        menu = QtGui.QMenu(self)
+        
+        urlAction = menu.addAction(self.tr("Open URL"))
+        urlAction.triggered.connect(lambda: self.OnOpenURL(asin))
+        
+        asinAction = menu.addAction(self.tr("Copy ASIN"))
+        asinAction.triggered.connect(lambda: self.OnCopyASIN(asin))
+        
+        menu.exec_(event.globalPos())
 
     def GetSelectedASIN(self):
         item = self.listView.currentItem()
@@ -291,5 +304,15 @@ class MainForm(QtGui.QDialog):
         self.resize(self.settings.value("mainform_size", QtCore.QSize(640, 200)))
         self.sys_notify = to_bool(self.settings.value("sys_notify", "false"))
         
-    def OnNotify(self):
-      pass
+    def OnCopyASIN(self, asin):
+        clipboard = QtGui.QApplication.clipboard()
+        clipboard.setText(asin)
+        
+    def OnOpenURL(self, asin):
+        country = db_helper.GetItemCountry(asin)    
+        domain = db_helper.GetDomain(country)
+        
+        if not domain or not asin: return
+        
+        url = "http://amzn." + domain + "/" + asin
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
