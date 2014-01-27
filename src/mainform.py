@@ -98,6 +98,7 @@ class MainForm(QtGui.QDialog):
         self.tray = QtGui.QSystemTrayIcon(self)
         self.trayMenu = QtGui.QMenu(self)
         
+        self.trayMenu.addAction(self.updateAction)
         self.trayMenu.addAction(self.itemsAction)
         self.trayMenu.addAction(self.settingsAction)
         
@@ -119,6 +120,9 @@ class MainForm(QtGui.QDialog):
         
         self.itemsAction = QtGui.QAction(self.tr("Items..."), self)
         self.itemsAction.triggered.connect(self.show)
+        
+        self.updateAction = QtGui.QAction(self.tr("Update"), self)
+        self.updateAction.triggered.connect(self.OnUpdateItems)
         
         self.quitAction = QtGui.QAction(self.tr("Quit"), self)
         self.quitAction.triggered.connect(self.exit)
