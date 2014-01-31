@@ -98,6 +98,22 @@ def GetPrice(asins, country, accessKey, secretKey, associateTag):
     
     return (prices, errors)
 
+def GetAttributes(asin, country, accessKey, secretKey, associateTag):
+    if not asin: return {}
+    
+    params = {}
+    params["Operation"] = "ItemLookup"    
+    params["ResponseGroup"] = "ItemAttributes"   
+    params["ItemId"] = asin
+    
+    result, request_url = DoAWSRequest(params, country, accessKey, secretKey, associateTag)
+    
+    doc = xml.dom.minidom.parseString(result)
+    if not IsValidResponse(doc): raise AWSError("Invalid response", request_url, GetErrors(doc))
+    
+    try: return GetAttributesFromResponse(doc)
+    except Exception, e: raise AWSError(str(e), request_url)
+
 def SplitList(lst, size):
     n = len(lst) / size
     r = len(lst) % size
@@ -211,6 +227,53 @@ def GetPricesFromResponse(doc):
         itemNode = itemNode.nextSibling   
     
     return prices
+
+def GetAttributesFromResponse(doc):
+    attrs = {}
+
+    itemsNode = doc.getElementsByTagName("Items")[0]
+    if not itemsNode: raise Exception("Items node not found")
+    
+    requestNode = FindChildNode(itemsNode, "Request")
+    if not requestNode: raise Exception("Request node not found")
+    
+    itemNode = requestNode.nextSibling
+    
+    if itemNode == None: raise Exception("Items not found")
+    
+    while itemNode != None:
+        if itemNode.nodeType != itemNode.ELEMENT_NODE or itemNode.nodeName != "Item":
+            itemNode = itemNode.nextSibling
+            continue
+                
+        asinNode = FindChildNode(itemNode, "ASIN")
+        if not asinNode: raise Exception("ASIN node not found")
+        
+        asin = GetFirstChildNodeValue(asinNode)
+        if not asin: raise Exception("ASIN node has not value")
+        
+        attrs[asin] = {}
+        
+        attrsNode = FindChildNode(itemNode, "ItemAttributes")
+        if not attrsNode: raise Exception("ItemAttributes node not found")
+        
+        for node in attrsNode.childNodes:
+            if not node.hasChildNodes(): continue
+            elif node.firstChild.nodeType == node.TEXT_NODE: attrs[node.nodeName] = node.firstChild.nodeValue
+            else:
+                name = node.nodeName
+                node2 = node.firstChild
+                
+                while node2 and node2.nodeType != node2.TEXT_NODE:
+                    name = name + "/" + node2.nodeName                   
+                    node2 = node2.firstChild
+                    
+                if node2 and node2.nodeType == node2.TEXT_NODE: attrs[name] = node2.nodeValue
+                else: print("missing text node for attribute")
+        
+        itemNode = itemNode.nextSibling   
+        
+    return attrs
     
 def FindChildNode(parent, name):
     if not parent.hasChildNodes(): return None

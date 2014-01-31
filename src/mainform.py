@@ -6,6 +6,7 @@ from aboutform import AboutForm
 from threading import Thread
 from functools import partial
 from chart import ChartItemDelegate, ChartDataProvider
+from aws import GetAttributes
 
 import db_helper
 import helper
@@ -165,6 +166,10 @@ class MainForm(QtGui.QDialog):
         asinAction = menu.addAction(self.tr("Copy ASIN"))
         asinAction.triggered.connect(lambda: self.OnCopyASIN(asin))
         
+        if helper.debug_mode:
+            attrsAction = menu.addAction(self.tr("Get attributes..."))
+            attrsAction.triggered.connect(lambda: self.OnGetAttributes(asin))            
+        
         menu.exec_(event.globalPos())
 
     def GetSelectedASIN(self):
@@ -320,3 +325,9 @@ class MainForm(QtGui.QDialog):
         
         url = "http://amzn." + domain + "/" + asin
         QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
+        
+    def OnGetAttributes(self, asin):
+        country = db_helper.GetItemCountry(asin)
+        attrs = GetAttributes(asin, country, self.accessKey, self.secretKey, self.associateTag)
+        
+        print(attrs)
