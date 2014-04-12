@@ -80,14 +80,14 @@ def LastError(query, show = False):
         if show: QtGui.QMessageBox.warning(None, "Errors while query executing", query.lastError().text())
         return True
     return False
-    
+
 def FormatAWSErrors(errors, max_length):
     results = []
-    
+
     for error in errors:
-        if len(error["msg"]) > max_length: results.append(error["msg"][:max_length] + "...")
-        else: results.append(error["msg"])
-    
+        if len(error.message) > max_length: results.append(error.message[:max_length] + "...")
+        else: results.append(error.message)
+
     if len(results) > 0: return "\n".join(results)
     return ""
 

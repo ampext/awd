@@ -1,5 +1,6 @@
 from datetime import datetime
 from collections import namedtuple
+from itertools import repeat
 import httplib
 import hashlib
 import urllib
@@ -9,6 +10,7 @@ import xml.dom.minidom
 import db_helper
 
 RESTRequest = namedtuple("RESTRequest", ["method", "host", "url", "params"])
+AWSRequestError = namedtuple("AWSRequestError", ["code", "message"])
 
 class AWSError(Exception):
     def __init__(self, text, request = "", errors = []):
@@ -21,7 +23,15 @@ class AWSError(Exception):
         
     def GetErrors(self):
         return self.errors
-    
+
+    def GetFullDescription(self):
+        result = self.text
+
+        if self.errors:
+            result += ". Errors: " + ", ".join(list(map(lambda e : "{0} ({1})".format(e.message, e.code), self.errors)))
+
+        return result
+
 def CreateRESTSignature(text, key):
     mac = hmac.new(key, text, hashlib.sha256)
     sig = base64.b64encode(mac.digest())
@@ -58,13 +68,11 @@ def DoAWSRequest(params_dict, country, accessKey, secretKey, associateTag):
     content = result.read()
     connection.close()
     
-    if result.status != 200 : 
+    if result.status != 200:
         text = "server returns code " + str(result.status)
         errors = []
    
-        error = ParseLookupErrorResponse(xml.dom.minidom.parseString(content))
-        if error.has_key("msg"): errors.append(error)
-
+        errors = GetErrorsFromResponse(xml.dom.minidom.parseString(content))
         raise AWSError(text, request_url, errors)
     
     return content, request_url
@@ -89,13 +97,13 @@ def GetPrice(asins, country, accessKey, secretKey, associateTag):
         result, request_url = DoAWSRequest(params, country, accessKey, secretKey, associateTag)
         
         doc = xml.dom.minidom.parseString(result)
-        if not IsValidResponse(doc): raise AWSError("Invalid response", request_url, GetErrors(doc))
+        errors = GetErrorsFromResponse(doc)
+
+        if not IsValidRequest(doc): raise AWSError("Invalid response", request_url, errors)
         
         try: prices = prices + GetPricesFromResponse(doc)
         except Exception, e: raise AWSError(str(e), request_url)
 
-        errors = GetErrors(doc)
-    
     return (prices, errors)
 
 def GetAttributes(asin, country, accessKey, secretKey, associateTag):
@@ -107,12 +115,14 @@ def GetAttributes(asin, country, accessKey, secretKey, associateTag):
     params["ItemId"] = asin
     
     result, request_url = DoAWSRequest(params, country, accessKey, secretKey, associateTag)
-    
+
     doc = xml.dom.minidom.parseString(result)
-    if not IsValidResponse(doc): raise AWSError("Invalid response", request_url, GetErrors(doc))
+    errors = GetErrorsFromResponse(doc)
+
+    if not IsValidRequest(doc): raise AWSError("Invalid request", request_url, errors)
     
     try: return GetAttributesFromResponse(doc)
-    except Exception, e: raise AWSError(str(e), request_url)
+    except Exception, e: raise AWSError("Request errors", request_url, errors)
 
 def SplitList(lst, size):
     n = len(lst) / size
@@ -132,18 +142,16 @@ def SplitList(lst, size):
 
     return sub_list
 
-def IsValidResponse(doc):
-    validNode = doc.getElementsByTagName("IsValid")[0]
-    if not validNode: return False
-    
-    return GetFirstChildNodeValue(validNode) == "True"
+def IsValidRequest(doc):
+    validNode = FindNodeByPath(doc.documentElement, "ItemLookupResponse/Items/Request/IsValid", True)
+    if not validNode or GetFirstChildNodeValue(validNode) != "True": return False
 
-def GetErrors(doc):
+    return True
+
+def GetErrorsFromResponse(doc):
     errors = []
    
-    if not doc.getElementsByTagName("Errors"): return errors
-    
-    errorsNode = doc.getElementsByTagName("Errors")[0]
+    errorsNode = FindNodeByPath(doc.documentElement, "ItemLookupResponse/Items/Request/Errors", True)
     if not errorsNode: return errors
 
     errorNode = FindChildNode(errorsNode, "Error")
@@ -160,29 +168,17 @@ def ParseErrorNode(errorNode):
     msgNode = FindChildNode(errorNode, "Message")
     
     if not codeNode or not msgNode: return None
-    return {"code" : GetFirstChildNodeValue(codeNode), "msg" : GetFirstChildNodeValue(msgNode)}
-    
-def ParseLookupErrorResponse(doc):
-    responseNode = doc.getElementsByTagName("ItemLookupErrorResponse")[0]
-    if not responseNode: return {}
-    
-    errorNode = FindChildNode(responseNode, "Error")
-    if not errorNode: return {}
-    
-    return ParseErrorNode(errorNode)
+    return AWSRequestError(GetFirstChildNodeValue(codeNode),GetFirstChildNodeValue(msgNode))
 
 def GetPricesFromResponse(doc):  
     prices = []
 
-    itemsNode = doc.getElementsByTagName("Items")[0]
-    if not itemsNode: raise Exception("Items node not found")
-    
-    requestNode = FindChildNode(itemsNode, "Request")
+    requestNode = FindNodeByPath(doc.documentElement, "ItemLookupResponse/Items/Request", True)
     if not requestNode: raise Exception("Request node not found")
-    
+
     itemNode = requestNode.nextSibling
     
-    if itemNode == None: raise Exception("Items not found")
+    if itemNode == None: raise Exception("Item node not found")
     
     while itemNode != None:
         if itemNode.nodeType != itemNode.ELEMENT_NODE or itemNode.nodeName != "Item":
@@ -231,10 +227,7 @@ def GetPricesFromResponse(doc):
 def GetAttributesFromResponse(doc):
     attrs = {}
 
-    itemsNode = doc.getElementsByTagName("Items")[0]
-    if not itemsNode: raise Exception("Items node not found")
-    
-    requestNode = FindChildNode(itemsNode, "Request")
+    requestNode = FindNodeByPath(doc.documentElement, "ItemLookupResponse/Items/Request", True)
     if not requestNode: raise Exception("Request node not found")
     
     itemNode = requestNode.nextSibling
@@ -269,7 +262,7 @@ def GetAttributesFromResponse(doc):
                     node2 = node2.firstChild
                     
                 if node2 and node2.nodeType == node2.TEXT_NODE: attrs[name] = node2.nodeValue
-                else: print("missing text node for attribute")
+                else: print("Missing text node for attribute")
         
         itemNode = itemNode.nextSibling   
         
@@ -288,3 +281,33 @@ def GetFirstChildNodeValue(node):
     if node.firstChild.nodeType != node.TEXT_NODE: return None
     
     return node.firstChild.nodeValue
+
+def FindNodeByPath(parent, path, include_parent):
+    if not path: return None
+
+    if include_parent:
+        name, sep, next_path = path.partition("/")
+
+        if parent.nodeName == name:
+            if not next_path: return parent
+            else: path = next_path
+
+    nodes = [parent]
+    paths = [path]
+
+    while nodes:
+        current_node = nodes.pop()
+        current_path = paths.pop()
+        found_nodes = []
+
+        name, sep, next_path = current_path.partition("/")
+
+        for node in current_node.childNodes:
+            if node.nodeName == name:
+                if not next_path: return node
+                else: found_nodes.append(node)
+        
+        if not found_nodes: return None
+        else:
+            nodes.extend(found_nodes)
+            paths.extend(list(repeat(next_path, len(found_nodes))))

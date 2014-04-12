@@ -115,4 +115,3 @@ class RequestForm(QtGui.QDialog):
                 content = doc.toString(4)
                 
             self.outputText.setPlainText(content)
-        

@@ -327,7 +327,10 @@ class MainForm(QtGui.QDialog):
         QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
         
     def OnGetAttributes(self, asin):
-        country = db_helper.GetItemCountry(asin)
-        attrs = GetAttributes(asin, country, self.accessKey, self.secretKey, self.associateTag)
-        
-        print(attrs)
+
+        try:
+            country = db_helper.GetItemCountry(asin)
+            attrs = GetAttributes(asin, country, self.accessKey, self.secretKey, self.associateTag)
+            print(attrs)
+        except Exception, e:
+            notify.Notify(e.GetFullDescription(), self, self.sys_notify)
