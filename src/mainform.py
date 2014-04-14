@@ -48,6 +48,7 @@ class MainForm(QtGui.QDialog):
         self.listView = QtGui.QTreeWidget()
         self.listView.setHeaderLabels(headers)
         self.listView.setRootIsDecorated(False)
+        self.listView.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         
         self.countryColumn, self.asinColumn, self.labelColumn, self.priceColumn, self.lastColumn, self.minColumn, self.maxColumn, self.chartColumn = range(0, 8)
         
@@ -156,27 +157,29 @@ class MainForm(QtGui.QDialog):
         event.ignore()
         
     def contextMenuEvent(self, event):
-        asin = self.GetSelectedASIN()
+        asins = self.GetSelectedASINs()
+        if not asins: return
         
-        menu = QtGui.QMenu(self)
+        if len(asins) == 1:
+            menu = QtGui.QMenu(self)
         
-        urlAction = menu.addAction(self.tr("Open URL"))
-        urlAction.triggered.connect(lambda: self.OnOpenURL(asin))
-        
-        asinAction = menu.addAction(self.tr("Copy ASIN"))
-        asinAction.triggered.connect(lambda: self.OnCopyASIN(asin))
-        
-        if helper.debug_mode:
-            attrsAction = menu.addAction(self.tr("Get attributes..."))
-            attrsAction.triggered.connect(lambda: self.OnGetAttributes(asin))            
-        
-        menu.exec_(event.globalPos())
+            urlAction = menu.addAction(self.tr("Open URL"))
+            urlAction.triggered.connect(lambda: self.OnOpenURL(asins[0]))
+            
+            asinAction = menu.addAction(self.tr("Copy ASIN"))
+            asinAction.triggered.connect(lambda: self.OnCopyASIN(asins[0]))
+            
+            if helper.debug_mode:
+                attrsAction = menu.addAction(self.tr("Get attributes..."))
+                attrsAction.triggered.connect(lambda: self.OnGetAttributes(asins[0]))            
+            
+            menu.exec_(event.globalPos())
 
-    def GetSelectedASIN(self):
-        item = self.listView.currentItem()
+    def GetSelectedASINs(self):
+        items = self.listView.selectedItems()
         
-        if item is None: return ""
-        return item.text(self.asinColumn)
+        if not items: return []
+        return list(map(lambda item : item.text(self.asinColumn), items))
 
     def LoadCountryIcons(self):
         self.icons = {}
@@ -242,9 +245,10 @@ class MainForm(QtGui.QDialog):
             self.listView.setItemDelegateForColumn(self.chartColumn, ChartItemDelegate(self.listView, self.seriesProvider))
 
     def OnItemSelectionChanged(self):
-        enable_editing = len(self.listView.selectedItems()) > 0
+        enable_removing = len(self.listView.selectedItems()) > 0
+        enable_editing = len(self.listView.selectedItems()) == 1
         
-        self.removeButton.setEnabled(enable_editing)
+        self.removeButton.setEnabled(enable_removing)
         self.editButton.setEnabled(enable_editing)
     
     def OnAddItem(self):
@@ -253,14 +257,18 @@ class MainForm(QtGui.QDialog):
             self.UpdateListView()
         
     def OnEditItem(self):
-        form = ItemForm(self, self.icons, self.GetSelectedASIN())
+        asins = self.GetSelectedASINs()
+        if len(asins) > 1: return
+        
+        form = ItemForm(self, self.icons, asins[0])
         if form.exec_() == QtGui.QDialog.Accepted: self.UpdateListView()
         
     def OnRemoveItem(self):
-        if QtGui.QMessageBox.warning(self, self.tr("Warning"), self.tr("Delete this item from database?"),
+        if QtGui.QMessageBox.warning(self, self.tr("Warning"), self.tr("Delete this item(s) from database?"),
         QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.No) == QtGui.QMessageBox.No: return
         
-        db_helper.DeleteItem(self.GetSelectedASIN())
+        for asin in self.GetSelectedASINs():
+            db_helper.DeleteItem(asin)
         
         self.UpdateListView()
         
