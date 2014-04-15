@@ -9,24 +9,18 @@ class ItemForm(QtGui.QDialog):
         
         self.asinEdit = QtGui.QLineEdit(self)
         self.labelEdit = QtGui.QLineEdit(self)
-        
-        subLayout = QtGui.QHBoxLayout()
-        subLayout.addWidget(QtGui.QLabel(self.tr("ASIN"), self), 1)
-        subLayout.addWidget(self.asinEdit, 2)
-        layout.addLayout(subLayout)
-
-        subLayout = QtGui.QHBoxLayout()
-        subLayout.addWidget(QtGui.QLabel(self.tr("Label"), self), 1)
-        subLayout.addWidget(self.labelEdit, 2)
-        layout.addLayout(subLayout)
-        
         self.comboBox = QtGui.QComboBox(self)
+               
+        asinLayout = QtGui.QHBoxLayout()
+        asinLayout.addWidget(self.asinEdit)
+        asinLayout.addWidget(self.comboBox)
+
+        labelsLayout = QtGui.QHBoxLayout()
+        labelsLayout.addWidget(self.labelEdit, 2)
         
-        for country in db_helper.GetAmazonCountries():
-            if icons.has_key(country): self.comboBox.addItem(icons[country], country)
-            else: self.comboBox.addItem(country)
-        
-        layout.addWidget(self.comboBox)
+        formLayout = QtGui.QFormLayout()
+        formLayout.addRow(self.tr("ASIN"), asinLayout)
+        formLayout.addRow(self.tr("Label"), labelsLayout)
         
         okButton = None
         
@@ -36,6 +30,7 @@ class ItemForm(QtGui.QDialog):
         else:
             okButton = QtGui.QPushButton(self.tr("Edit"), self)
             okButton.clicked.connect(self.EditItem)
+            
             self.asinEdit.setDisabled(True)
             self.comboBox.setDisabled(True)
             self.LoadItem(asin)
@@ -43,11 +38,17 @@ class ItemForm(QtGui.QDialog):
         cancelButton = QtGui.QPushButton(self.tr("Cancel"), self)
         cancelButton.clicked.connect(self.close)
         
-        subLayout = QtGui.QHBoxLayout()
-        subLayout.addStretch(1)
-        subLayout.addWidget(okButton)
-        subLayout.addWidget(cancelButton)
-        layout.addLayout(subLayout)
+        btnLayout = QtGui.QHBoxLayout()
+        btnLayout.addStretch(1)
+        btnLayout.addWidget(okButton)
+        btnLayout.addWidget(cancelButton)
+        
+        layout.addLayout(formLayout)
+        layout.addLayout(btnLayout)
+        
+        for country in db_helper.GetAmazonCountries():
+            if icons.has_key(country): self.comboBox.addItem(icons[country], country)
+            else: self.comboBox.addItem(country)
         
         self.setLayout(layout)
         self.setWindowTitle(self.tr("Item"))
@@ -87,3 +88,6 @@ class ItemForm(QtGui.QDialog):
         db_helper.EditItemLabel(self.asinEdit.text(), self.labelEdit.text())
         
         self.accept()
+        
+    def FillFields(self):
+        pass
