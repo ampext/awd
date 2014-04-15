@@ -327,7 +327,7 @@ class MainForm(QtGui.QDialog):
         
     def OnOpenURL(self, asin):
         country = db_helper.GetItemCountry(asin)    
-        domain = db_helper.GetDomain(country)
+        domain = helper.GetDomain(country)
         
         if not domain or not asin: return
         
@@ -340,5 +340,6 @@ class MainForm(QtGui.QDialog):
             country = db_helper.GetItemCountry(asin)
             attrs = GetAttributes(asin, country, self.accessKey, self.secretKey, self.associateTag)
             print(attrs)
+            
         except Exception, e:
             notify.Notify(e.GetFullDescription(), self, self.sys_notify)

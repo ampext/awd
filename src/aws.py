@@ -1,13 +1,13 @@
 from datetime import datetime
 from collections import namedtuple
 from itertools import repeat
+from helper import GetDomain
 import httplib
 import hashlib
 import urllib
 import hmac
 import base64
 import xml.dom.minidom
-import db_helper
 
 RESTRequest = namedtuple("RESTRequest", ["method", "host", "url", "params"])
 AWSRequestError = namedtuple("AWSRequestError", ["code", "message"])
@@ -47,7 +47,7 @@ def CreateRESTRequest(params_dict, country):
     params_list.sort()
     params = "&".join(params_list)
     
-    return RESTRequest("GET", "webservices.amazon." + db_helper.GetDomain(country), "/onca/xml", params)
+    return RESTRequest("GET", "webservices.amazon." + GetDomain(country), "/onca/xml", params)
 
 def FillParams(params_dict, accessKey, secretKey, associateTag):
     params_dict["Service"] = "AWSECommerceService"

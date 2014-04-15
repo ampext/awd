@@ -1,7 +1,6 @@
 from PySide import QtCore, QtGui, QtSql
 from datetime import datetime
-from aws import AWSError
-import aws
+from aws import AWSError, GetPrice
 import sys
 import os
 import helper
@@ -194,16 +193,6 @@ def GetLocaleName(country):
     
     return ""
 
-def GetDomain(country):
-    if country == "us": return "com"
-    if country == "uk": return "co.uk"
-    if country == "de": return "de"
-    if country == "fr": return "fr"
-    if country == "jp": return "co.jp"
-    if country == "ca": return "ca"
-    if country == "cn": return "cn"
-    return ""
-
 def FormatPrice(price, country):
     loc = locale.getlocale()
     try:
@@ -245,7 +234,7 @@ def UpdateDatabase(accessKey, secretKey, associateTag):
         all_errors = []
         
         for country in items.keys():
-            prices, errors = aws.GetPrice(items[country], country, accessKey, secretKey, associateTag)
+            prices, errors = GetPrice(items[country], country, accessKey, secretKey, associateTag)
             all_errors += errors
 
             for price in prices:

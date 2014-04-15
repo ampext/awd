@@ -12,3 +12,13 @@ def GetDatabaseName():
 
 def GetConfigName():
     return "settings"
+
+def GetDomain(country):
+    if country == "us": return "com"
+    if country == "uk": return "co.uk"
+    if country == "de": return "de"
+    if country == "fr": return "fr"
+    if country == "jp": return "co.jp"
+    if country == "ca": return "ca"
+    if country == "cn": return "cn"
+    return ""
