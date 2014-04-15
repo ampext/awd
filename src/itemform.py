@@ -30,7 +30,7 @@ class ItemForm(QtGui.QDialog):
         
         okButton = None
         
-        if asin == "":
+        if not asin:
             okButton = QtGui.QPushButton(self.tr("Add"), self)
             okButton.clicked.connect(self.AddItem)
         else:
@@ -62,16 +62,16 @@ class ItemForm(QtGui.QDialog):
     def AddItem(self):
         # TODO: remove whitespace characters from text
 
-        if self.asinEdit.text() == "":
+        if not self.asinEdit.text():
             QtGui.QMessageBox.information(self, self.tr("Validation"), self.tr("ASIN is empty!"))
             return
 
-        if self.labelEdit.text() == "":
+        if not self.labelEdit.text():
             QtGui.QMessageBox.information(self, self.tr("Validation"), self.tr("Label is empty!"))
             return
 
         if db_helper.CheckASIN(self.asinEdit.text()): 
-            QtGui.QMessageBox.information(self, self.tr("Validation"), self.tr("Can't add new item because item with same ASIN already exists!"))
+            QtGui.QMessageBox.information(self, self.tr("Validation"), self.tr("Cannot add new item because item with same ASIN already exists!"))
             return
 
         db_helper.AddItem(self.asinEdit.text(), self.labelEdit.text(), self.comboBox.currentText())
@@ -80,7 +80,7 @@ class ItemForm(QtGui.QDialog):
     
     def EditItem(self):
         
-        if self.labelEdit.text() == "":
+        if not self.labelEdit.text():
             QtGui.QMessageBox.information(self, self.tr("Validation"), self.tr("Label is empty!"))
             return
         
