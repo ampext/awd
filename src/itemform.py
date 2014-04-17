@@ -1,26 +1,30 @@
 from PySide import QtGui, QtCore
+from aws import GetAttributes, AWSError
 import db_helper
 
 class ItemForm(QtGui.QDialog): 
-    def __init__(self, parent = None, icons = {}, asin = ""):
+    def __init__(self, parent, icons, accessKey, secretKey, associateTag, asin = ""):
         QtGui.QDialog.__init__(self, parent)
+        
+        self.accessKey = accessKey
+        self.secretKey = secretKey
+        self.associateTag = associateTag
         
         layout = QtGui.QVBoxLayout()
         
         self.asinEdit = QtGui.QLineEdit(self)
         self.labelEdit = QtGui.QLineEdit(self)
         self.comboBox = QtGui.QComboBox(self)
+        self.afButton = QtGui.QPushButton(self.tr("Fill"), self)
                
         asinLayout = QtGui.QHBoxLayout()
         asinLayout.addWidget(self.asinEdit)
         asinLayout.addWidget(self.comboBox)
-
-        labelsLayout = QtGui.QHBoxLayout()
-        labelsLayout.addWidget(self.labelEdit, 2)
+        asinLayout.addWidget(self.afButton)
         
         formLayout = QtGui.QFormLayout()
         formLayout.addRow(self.tr("ASIN"), asinLayout)
-        formLayout.addRow(self.tr("Label"), labelsLayout)
+        formLayout.addRow(self.tr("Label"), self.labelEdit)
         
         okButton = None
         
@@ -38,6 +42,9 @@ class ItemForm(QtGui.QDialog):
         cancelButton = QtGui.QPushButton(self.tr("Cancel"), self)
         cancelButton.clicked.connect(self.close)
         
+        self.asinEdit.textChanged.connect(self.OnASINTextChanged)
+        self.afButton.clicked.connect(self.OnAutoFillFields)
+        
         btnLayout = QtGui.QHBoxLayout()
         btnLayout.addStretch(1)
         btnLayout.addWidget(okButton)
@@ -50,6 +57,8 @@ class ItemForm(QtGui.QDialog):
             if icons.has_key(country): self.comboBox.addItem(icons[country], country)
             else: self.comboBox.addItem(country)
         
+        self.afButton.setEnabled(False)
+        
         self.setLayout(layout)
         self.setWindowTitle(self.tr("Item"))
         self.setResult(QtGui.QDialog.Rejected)
@@ -61,8 +70,6 @@ class ItemForm(QtGui.QDialog):
         self.comboBox.setCurrentIndex(self.comboBox.findText(lac[1]))
 
     def AddItem(self):
-        # TODO: remove whitespace characters from text
-
         if not self.asinEdit.text():
             QtGui.QMessageBox.information(self, self.tr("Validation"), self.tr("ASIN is empty!"))
             return
@@ -80,7 +87,6 @@ class ItemForm(QtGui.QDialog):
         self.accept()
     
     def EditItem(self):
-        
         if not self.labelEdit.text():
             QtGui.QMessageBox.information(self, self.tr("Validation"), self.tr("Label is empty!"))
             return
@@ -88,6 +94,23 @@ class ItemForm(QtGui.QDialog):
         db_helper.EditItemLabel(self.asinEdit.text(), self.labelEdit.text())
         
         self.accept()
+        
+    def OnASINTextChanged(self, text):        
+        self.afButton.setEnabled(not not text)
+        
+    def OnAutoFillFields(self):
+        attrs = {}
+        
+        try:
+            asin = self.asinEdit.text()
+            country = self.comboBox.currentText()
+            attrs = GetAttributes(asin, country, self.accessKey, self.secretKey, self.associateTag)
+            
+        except AWSError, e:
+            QtGui.QMessageBox.information(self, self.tr("Validation"), e.GetFullDescription())
+            
+        if "Title" in attrs:
+            self.labelEdit.setText(attrs["Title"])
         
     def FillFields(self):
         pass

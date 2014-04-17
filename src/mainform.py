@@ -6,7 +6,7 @@ from aboutform import AboutForm
 from threading import Thread
 from functools import partial
 from chart import ChartItemDelegate, ChartDataProvider
-from aws import GetAttributes
+from aws import GetAttributes, AWSError
 
 import db_helper
 import helper
@@ -252,7 +252,7 @@ class MainForm(QtGui.QDialog):
         self.editButton.setEnabled(enable_editing)
     
     def OnAddItem(self):
-        form = ItemForm(self, self.icons)
+        form = ItemForm(self, self.icons, self.accessKey, self.secretKey, self.associateTag)
         if form.exec_() == QtGui.QDialog.Accepted:
             self.UpdateListView()
         
@@ -260,7 +260,7 @@ class MainForm(QtGui.QDialog):
         asins = self.GetSelectedASINs()
         if len(asins) > 1: return
         
-        form = ItemForm(self, self.icons, asins[0])
+        form = ItemForm(self, self.icons, self.accessKey, self.secretKey, self.associateTag, asins[0])
         if form.exec_() == QtGui.QDialog.Accepted: self.UpdateListView()
         
     def OnRemoveItem(self):
@@ -341,5 +341,5 @@ class MainForm(QtGui.QDialog):
             attrs = GetAttributes(asin, country, self.accessKey, self.secretKey, self.associateTag)
             print(attrs)
             
-        except Exception, e:
+        except AWSError, e:
             notify.Notify(e.GetFullDescription(), self, self.sys_notify)
