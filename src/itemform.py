@@ -57,7 +57,7 @@ class ItemForm(QtGui.QDialog):
             if icons.has_key(country): self.comboBox.addItem(icons[country], country)
             else: self.comboBox.addItem(country)
         
-        self.afButton.setEnabled(False)
+        if not asin: self.afButton.setEnabled(False)
         
         self.setLayout(layout)
         self.setWindowTitle(self.tr("Item"))
