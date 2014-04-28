@@ -3,7 +3,7 @@ from itemform import ItemForm
 from settingsform import SettingsForm, to_bool
 from requestform import RequestForm
 from aboutform import AboutForm
-from threading import Thread
+from worker import WorkerThread, TaskResult
 from functools import partial
 from chart import ChartItemDelegate, ChartDataProvider
 from aws import GetAttributes, AWSError
@@ -68,6 +68,10 @@ class MainForm(QtGui.QDialog):
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.OnTimer)
         self.timer.start()
+        
+        self.thread = WorkerThread()
+        self.thread.setTask(lambda abort: self.OnUpdateItemsTask(abort))
+        self.thread.resultReady.connect(self.OnUpdateItemsTaskFinished)
         
         self.CreateActions()
         self.CreateTray()
@@ -273,17 +277,27 @@ class MainForm(QtGui.QDialog):
         self.UpdateListView()
         
     def OnUpdateItems(self):
+        if self.thread.isRunning():
+            print("Worker thread is already running")
+            return
+        
         if self.accessKey == "" or self.secretKey == "" or self.associateTag == "":
             QtGui.QMessageBox.warning(self, self.tr("Warning"),
             self.tr("Amazon access parameters are not set. Go to \"Settings\" dialog and fill corresponded fields"))
             return
 
-        thread = Thread(target = self.UpdateDatabase)
-        thread.start()
-        
-    def UpdateDatabase(self):
+        self.thread.start()
+
+    def OnUpdateItemsTask(self, abort):
         result = db_helper.UpdateDatabase(self.accessKey, self.secretKey, self.associateTag)
-        self.db_updated.emit(result[0], result[1], result[2], result[3])
+        return TaskResult(result, 0, "")
+        
+    def OnUpdateItemsTaskFinished(self, result):
+        if result.error != 0:
+            QtGui.QMessageBox.information(self, self.tr("Fetching error"), result.message)
+            return
+
+        self.DoUpdateItems(result.result[0], result.result[1], result.result[2], result.result[3])
         
     def DoUpdateItems(self, cntr, up, down, error):
         if error != "" and cntr == 0:
