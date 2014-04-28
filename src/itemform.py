@@ -1,15 +1,22 @@
 from PySide import QtGui, QtCore
 from aws import GetAttributes, AWSError
+from worker import WorkerThread, TaskResult
+import threading
 import db_helper
+import time
 
 class ItemForm(QtGui.QDialog): 
     def __init__(self, parent, icons, accessKey, secretKey, associateTag, asin = ""):
         QtGui.QDialog.__init__(self, parent)
-        
+
+        self.editMode = not not asin
+
         self.accessKey = accessKey
         self.secretKey = secretKey
         self.associateTag = associateTag
-        
+
+        self.thread = None
+
         layout = QtGui.QVBoxLayout()
         
         self.asinEdit = QtGui.QLineEdit(self)
@@ -26,28 +33,25 @@ class ItemForm(QtGui.QDialog):
         formLayout.addRow(self.tr("ASIN"), asinLayout)
         formLayout.addRow(self.tr("Label"), self.labelEdit)
         
-        okButton = None
+        self.okButton = None
         
-        if not asin:
-            okButton = QtGui.QPushButton(self.tr("Add"), self)
-            okButton.clicked.connect(self.AddItem)
+        if not self.editMode:
+            self.okButton = QtGui.QPushButton(self.tr("Add"), self)
+            self.okButton.clicked.connect(self.AddItem)
         else:
-            okButton = QtGui.QPushButton(self.tr("Edit"), self)
-            okButton.clicked.connect(self.EditItem)
-            
-            self.asinEdit.setDisabled(True)
-            self.comboBox.setDisabled(True)
+            self.okButton = QtGui.QPushButton(self.tr("Edit"), self)
+            self.okButton.clicked.connect(self.EditItem)
             self.LoadItem(asin)
             
         cancelButton = QtGui.QPushButton(self.tr("Cancel"), self)
-        cancelButton.clicked.connect(self.close)
+        cancelButton.clicked.connect(self.Cancel)
         
         self.asinEdit.textChanged.connect(self.OnASINTextChanged)
         self.afButton.clicked.connect(self.OnAutoFillFields)
         
         btnLayout = QtGui.QHBoxLayout()
         btnLayout.addStretch(1)
-        btnLayout.addWidget(okButton)
+        btnLayout.addWidget(self.okButton)
         btnLayout.addWidget(cancelButton)
         
         layout.addLayout(formLayout)
@@ -56,9 +60,8 @@ class ItemForm(QtGui.QDialog):
         for country in db_helper.GetAmazonCountries():
             if icons.has_key(country): self.comboBox.addItem(icons[country], country)
             else: self.comboBox.addItem(country)
-        
-        if not asin: self.afButton.setEnabled(False)
-        
+
+        self.EnableControls()
         self.setLayout(layout)
         self.setWindowTitle(self.tr("Item"))
         self.setResult(QtGui.QDialog.Rejected)
@@ -94,23 +97,68 @@ class ItemForm(QtGui.QDialog):
         db_helper.EditItemLabel(self.asinEdit.text(), self.labelEdit.text())
         
         self.accept()
-        
+
+    def Cancel(self):
+        if self.thread:
+            self.thread.requestInterruption()
+            self.thread.wait()
+
+        self.close()
+
     def OnASINTextChanged(self, text):        
         self.afButton.setEnabled(not not text)
-        
+        self.okButton.setEnabled(not not text)
+
+    def DisableControls(self):
+        self.asinEdit.setEnabled(False)
+        self.labelEdit.setEnabled(False)
+        self.comboBox.setEnabled(False)
+        self.afButton.setEnabled(False)
+        self.okButton.setEnabled(False)
+
+    def EnableControls(self):
+        self.asinEdit.setEnabled(not self.editMode)
+        self.labelEdit.setEnabled(True)
+        self.comboBox.setEnabled(not self.editMode)
+        self.afButton.setEnabled(not not self.asinEdit.text())
+        self.okButton.setEnabled(not not self.asinEdit.text())
+
     def OnAutoFillFields(self):
+        if self.thread and self.thread.isRunning():
+            print("Worker thread is already running")
+            return
+
+        self.DisableControls()
+
+        if not self.thread:
+            self.thread = WorkerThread()
+            self.thread.setTask(lambda abort: self.FetchInfoTask(abort))
+            self.thread.resultReady.connect(self.OnFetchInfoTaskFinished)
+
+        self.thread.start()
+
+    def FetchInfoTask(self, abort):
         attrs = {}
-        
+
         try:
             asin = self.asinEdit.text()
             country = self.comboBox.currentText()
             attrs = GetAttributes(asin, country, self.accessKey, self.secretKey, self.associateTag)
             
-        except AWSError, e:
-            QtGui.QMessageBox.information(self, self.tr("Validation"), e.GetFullDescription())
+        except AWSError, e: return TaskResult(None, 1, e.GetFullDescription())
+
+        return TaskResult(attrs, 0, "")
             
+    def OnFetchInfoTaskFinished(self, result):
+        self.EnableControls()
+        
+        if result.error != 0:
+            QtGui.QMessageBox.information(self, self.tr("Fetching error"), result.message)
+            return
+
+        attrs = result.result
+        
         if "Title" in attrs:
             self.labelEdit.setText(attrs["Title"])
-        
-    def FillFields(self):
-        pass
+        else:
+            QtGui.QMessageBox.information(self, self.tr("Fetching error"), self.tr("Attribute \"Title\" not found"))
