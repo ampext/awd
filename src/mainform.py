@@ -26,7 +26,7 @@ class MainForm(QtGui.QDialog):
         addButton.clicked.connect(self.OnAddItem)
         subLayout.addWidget(addButton)
         
-        self.removeButton = QtGui.QPushButton(self.tr("Remove item"), self)
+        self.removeButton = QtGui.QPushButton(self.tr("Remove item(s)"), self)
         self.removeButton.clicked.connect(self.OnRemoveItem)
         subLayout.addWidget(self.removeButton)
         
@@ -163,10 +163,10 @@ class MainForm(QtGui.QDialog):
     def contextMenuEvent(self, event):
         asins = self.GetSelectedASINs()
         if not asins: return
+    
+        menu = QtGui.QMenu(self)
         
         if len(asins) == 1:
-            menu = QtGui.QMenu(self)
-        
             urlAction = menu.addAction(self.tr("Open URL"))
             urlAction.triggered.connect(lambda: self.OnOpenURL(asins[0]))
             
@@ -175,8 +175,18 @@ class MainForm(QtGui.QDialog):
             
             if helper.debug_mode:
                 attrsAction = menu.addAction(self.tr("Get attributes..."))
-                attrsAction.triggered.connect(lambda: self.OnGetAttributes(asins[0]))            
+                attrsAction.triggered.connect(lambda: self.OnGetAttributes(asins[0]))     
+                
+            menu.addSeparator()
             
+        if len(asins) == 1:
+            editAction = menu.addAction(self.tr("Edit item..."))
+            editAction.triggered.connect(self.OnEditItem)
+            
+        removeAction = menu.addAction(self.tr("Remove item(s)"))
+        removeAction.triggered.connect(self.OnRemoveItem)
+
+        if len(asins) > 0:
             menu.exec_(event.globalPos())
 
     def GetSelectedASINs(self):
