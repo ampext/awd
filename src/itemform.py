@@ -98,12 +98,15 @@ class ItemForm(QtGui.QDialog):
         
         self.accept()
 
-    def Cancel(self):
+    def Cancel(self):      
         if self.thread:
             self.thread.requestInterruption()
             self.thread.wait()
 
         self.close()
+        
+    def closeEvent(self, event):
+        self.Cancel()
 
     def OnASINTextChanged(self, text):        
         self.afButton.setEnabled(not not text)
