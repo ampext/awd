@@ -153,6 +153,8 @@ class MainForm(QtGui.QDialog):
         form.exec_()
 
     def exit(self):
+        if self.thread.isRunning(): self.thread.wait()
+
         self.SaveSettings()
         QtGui.qApp.quit()
 
