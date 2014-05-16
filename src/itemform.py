@@ -22,8 +22,14 @@ class ItemForm(QtGui.QDialog):
         self.asinEdit = QtGui.QLineEdit(self)
         self.labelEdit = QtGui.QLineEdit(self)
         self.comboBox = QtGui.QComboBox(self)
-        self.afButton = QtGui.QPushButton(self.tr("Fill"), self)
-               
+        self.afButton = QtGui.QToolButton(self)
+
+        self.afButton.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "fill.png"))
+        self.afButton.setIconSize(QtCore.QSize(16, 16))
+        self.afButton.setText(self.tr("Fill"))
+        self.afButton.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
+        self.afButton.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred))
+
         asinLayout = QtGui.QHBoxLayout()
         asinLayout.addWidget(self.asinEdit)
         asinLayout.addWidget(self.comboBox)
