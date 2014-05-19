@@ -22,24 +22,42 @@ class MainForm(QtGui.QDialog):
         layout = QtGui.QVBoxLayout()
         subLayout = QtGui.QHBoxLayout()
         
-        addButton = QtGui.QPushButton(self.tr("Add item..."), self)
+        addButton = QtGui.QToolButton(self)
+        addButton.setText(self.tr("Add item..."))
+        addButton.setToolTip(addButton.text())
+        addButton.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "add.png"))
+        addButton.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
         addButton.clicked.connect(self.OnAddItem)
         subLayout.addWidget(addButton)
         
-        self.removeButton = QtGui.QPushButton(self.tr("Remove item(s)"), self)
+        self.removeButton = QtGui.QToolButton(self)
+        self.removeButton.setText(self.tr("Remove item(s)"))
+        self.removeButton.setToolTip(self.removeButton.text())
+        self.removeButton.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "remove.png"))
+        self.removeButton.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
         self.removeButton.clicked.connect(self.OnRemoveItem)
         subLayout.addWidget(self.removeButton)
         
-        self.editButton = QtGui.QPushButton(self.tr("Edit item..."), self)
+        self.editButton = QtGui.QToolButton(self)
+        self.editButton.setText(self.tr("Edit item..."))
+        self.editButton.setToolTip(self.editButton.text())
+        self.editButton.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "edit.png"))
+        self.editButton.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
         self.editButton.clicked.connect(self.OnEditItem)
         subLayout.addWidget(self.editButton)
         
         self.removeButton.setEnabled(False)
         self.editButton.setEnabled(False)
         
-        updateButton = QtGui.QPushButton(self.tr("Update"), self)
+        updateButton = QtGui.QToolButton(self)
+        updateButton.setText(self.tr("Update"))
+        updateButton.setToolTip(updateButton.text())
+        updateButton.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "update.png"))
+        updateButton.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
         updateButton.clicked.connect(self.OnUpdateItems)
         subLayout.addWidget(updateButton)
+        
+        subLayout.addStretch()
 
         layout.addLayout(subLayout)
         
