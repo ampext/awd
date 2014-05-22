@@ -13,54 +13,25 @@ import helper
 import notify
 
 
-class MainForm(QtGui.QDialog): 
+class MainForm(QtGui.QMainWindow): 
     db_updated = QtCore.Signal(int, int, int, str)
 
     def __init__(self, parent = None):
-        QtGui.QDialog.__init__(self, parent)
-        
-        layout = QtGui.QVBoxLayout()
-        subLayout = QtGui.QHBoxLayout()
-        
-        addButton = QtGui.QToolButton(self)
-        addButton.setText(self.tr("Add item..."))
-        addButton.setToolTip(addButton.text())
-        addButton.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "add.png"))
-        addButton.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
-        addButton.clicked.connect(self.OnAddItem)
-        subLayout.addWidget(addButton)
-        
-        self.removeButton = QtGui.QToolButton(self)
-        self.removeButton.setText(self.tr("Remove item(s)"))
-        self.removeButton.setToolTip(self.removeButton.text())
-        self.removeButton.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "remove.png"))
-        self.removeButton.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
-        self.removeButton.clicked.connect(self.OnRemoveItem)
-        subLayout.addWidget(self.removeButton)
-        
-        self.editButton = QtGui.QToolButton(self)
-        self.editButton.setText(self.tr("Edit item..."))
-        self.editButton.setToolTip(self.editButton.text())
-        self.editButton.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "edit.png"))
-        self.editButton.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
-        self.editButton.clicked.connect(self.OnEditItem)
-        subLayout.addWidget(self.editButton)
-        
-        self.removeButton.setEnabled(False)
-        self.editButton.setEnabled(False)
-        
-        updateButton = QtGui.QToolButton(self)
-        updateButton.setText(self.tr("Update"))
-        updateButton.setToolTip(updateButton.text())
-        updateButton.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "update.png"))
-        updateButton.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
-        updateButton.clicked.connect(self.OnUpdateItems)
-        subLayout.addWidget(updateButton)
-        
-        subLayout.addStretch()
+        QtGui.QMainWindow.__init__(self, parent)
 
-        layout.addLayout(subLayout)
+        toolbar = QtGui.QToolBar(self)
+        self.CreateActions()
         
+        toolbar.addAction(self.addAction)
+        toolbar.addAction(self.editAction)
+        toolbar.addAction(self.removeAction)
+        toolbar.addAction(self.updateAction)
+        
+        self.addToolBar(toolbar)
+
+        self.removeAction.setEnabled(False)
+        self.editAction.setEnabled(False)
+                
         headers = [self.tr(""), self.tr("ASIN"), self.tr("Label"), self.tr("Price"), self.tr("Last"), self.tr("Min"), self.tr("Max"), self.tr("Chart")]
         
         self.listView = QtGui.QTreeWidget()
@@ -81,8 +52,6 @@ class MainForm(QtGui.QDialog):
         
         self.listView.itemSelectionChanged.connect(self.OnItemSelectionChanged)
         
-        layout.addWidget(self.listView)
-        
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.OnTimer)
         self.timer.start()
@@ -90,13 +59,12 @@ class MainForm(QtGui.QDialog):
         self.thread = WorkerThread()
         self.thread.setTask(lambda abort: self.OnUpdateItemsTask(abort))
         self.thread.resultReady.connect(self.OnUpdateItemsTaskFinished)
-        
-        self.CreateActions()
+
         self.CreateTray()
         
         self.tray.show()
         
-        self.setLayout(layout)
+        self.setCentralWidget(self.listView)
         self.resize(640, 200);
         self.setWindowTitle(self.tr("Items list"))
         self.setWindowIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "tray.png"))
@@ -139,14 +107,27 @@ class MainForm(QtGui.QDialog):
         self.tray.activated.connect(self.OnTrayActivated)
         
     def CreateActions(self):
+        self.addAction = QtGui.QAction(self.tr("Add item..."), self)
+        self.addAction.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "add.png"))
+        self.addAction.triggered.connect(self.OnAddItem)
+        
+        self.editAction = QtGui.QAction(self.tr("Edit item..."), self)
+        self.editAction.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "edit.png"))
+        self.editAction.triggered.connect(self.OnEditItem)
+            
+        self.removeAction = QtGui.QAction(self.tr("Remove item(s)"), self)
+        self.removeAction.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "remove.png"))
+        self.removeAction.triggered.connect(self.OnRemoveItem)
+        
+        self.updateAction = QtGui.QAction(self.tr("Update"), self)
+        self.updateAction.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "update.png"))
+        self.updateAction.triggered.connect(self.OnUpdateItems)
+        
         self.settingsAction = QtGui.QAction(self.tr("Settings..."), self)
         self.settingsAction.triggered.connect(self.OnShowSettings)
         
         self.itemsAction = QtGui.QAction(self.tr("Items..."), self)
-        self.itemsAction.triggered.connect(self.show)
-        
-        self.updateAction = QtGui.QAction(self.tr("Update"), self)
-        self.updateAction.triggered.connect(self.OnUpdateItems)
+        self.itemsAction.triggered.connect(self.show)    
         
         self.quitAction = QtGui.QAction(self.tr("Quit"), self)
         self.quitAction.triggered.connect(self.exit)
@@ -200,11 +181,9 @@ class MainForm(QtGui.QDialog):
             menu.addSeparator()
             
         if len(asins) == 1:
-            editAction = menu.addAction(self.tr("Edit item..."))
-            editAction.triggered.connect(self.OnEditItem)
+            menu.addAction(self.editAction)
             
-        removeAction = menu.addAction(self.tr("Remove item(s)"))
-        removeAction.triggered.connect(self.OnRemoveItem)
+        menu.addAction(self.removeAction)
 
         if len(asins) > 0:
             menu.exec_(event.globalPos())
@@ -282,8 +261,8 @@ class MainForm(QtGui.QDialog):
         enable_removing = len(self.listView.selectedItems()) > 0
         enable_editing = len(self.listView.selectedItems()) == 1
         
-        self.removeButton.setEnabled(enable_removing)
-        self.editButton.setEnabled(enable_editing)
+        self.removeAction.setEnabled(enable_removing)
+        self.editAction.setEnabled(enable_editing)
     
     def OnAddItem(self):
         form = ItemForm(self, self.icons, self.accessKey, self.secretKey, self.associateTag)
