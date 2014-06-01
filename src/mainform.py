@@ -19,15 +19,8 @@ class MainForm(QtGui.QMainWindow):
     def __init__(self, parent = None):
         QtGui.QMainWindow.__init__(self, parent)
 
-        toolbar = QtGui.QToolBar(self)
-        self.CreateActions()
-        
-        toolbar.addAction(self.addAction)
-        toolbar.addAction(self.editAction)
-        toolbar.addAction(self.removeAction)
-        toolbar.addAction(self.updateAction)
-        
-        self.addToolBar(toolbar)
+        self.CreateToolBar()
+        self.CreateStatusBar()
 
         self.removeAction.setEnabled(False)
         self.editAction.setEnabled(False)
@@ -85,6 +78,28 @@ class MainForm(QtGui.QMainWindow):
         
         if self.hideAfterStart: self.hide()
         else: self.show()
+
+        self.SetLastUpdateLabel(self.lastUpdate)
+
+    def CreateToolBar(self):
+        toolbar = QtGui.QToolBar(self)
+        self.CreateActions()
+        
+        toolbar.addAction(self.addAction)
+        toolbar.addAction(self.editAction)
+        toolbar.addAction(self.removeAction)
+        toolbar.addAction(self.updateAction)
+        
+        self.addToolBar(toolbar)
+
+    def CreateStatusBar(self):
+        statusbar = QtGui.QStatusBar(self)
+
+        self.lastUpdateLabel = QtGui.QLabel(statusbar)
+
+        statusbar.addWidget(self.lastUpdateLabel)
+
+        self.setStatusBar(statusbar)
 
     def CreateTray(self):
         self.tray = QtGui.QSystemTrayIcon(self)
@@ -313,6 +328,9 @@ class MainForm(QtGui.QMainWindow):
             notify.Notify(error, self, self.sys_notify)
             print(error)
             return
+
+        self.lastUpdate = QtCore.QDateTime.currentDateTime()
+        self.SetLastUpdateLabel(self.lastUpdate)
         
         if not self.showNotifications: return
         
@@ -320,7 +338,7 @@ class MainForm(QtGui.QMainWindow):
         if error != "": text += "\n" + error
         
         notify.Notify(text, self, self.sys_notify)
-        self.UpdateListView()
+        self.UpdateListView()     
         
     def OnShowSettings(self):
         form = SettingsForm(self, self.settings)
@@ -332,6 +350,7 @@ class MainForm(QtGui.QMainWindow):
         
     def SaveSettings(self):
         self.settings.setValue("mainform_size", self.size())
+        self.settings.setValue("last_update", self.lastUpdate)
         self.settings.sync()
             
     def LoadSettings(self):
@@ -343,6 +362,7 @@ class MainForm(QtGui.QMainWindow):
         self.associateTag = str(self.settings.value("associate_tag", ""))
         self.resize(self.settings.value("mainform_size", QtCore.QSize(640, 200)))
         self.sys_notify = to_bool(self.settings.value("sys_notify", "false"))
+        self.lastUpdate = self.settings.value("last_update", QtCore.QDateTime())
         
     def OnCopyASIN(self, asin):
         clipboard = QtGui.QApplication.clipboard()
@@ -366,3 +386,9 @@ class MainForm(QtGui.QMainWindow):
             
         except AWSError, e:
             notify.Notify(e.GetFullDescription(), self, self.sys_notify)
+
+    def SetLastUpdateLabel(self, date):
+        str_date = self.tr("n/a")
+        if not date.isNull() and date.isValid(): str_date = date.toString(QtCore.Qt.SystemLocaleLongDate)
+
+        self.lastUpdateLabel.setText(self.tr("Last update:") + " " + str_date)
