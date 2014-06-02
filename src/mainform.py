@@ -332,6 +332,8 @@ class MainForm(QtGui.QMainWindow):
         self.lastUpdate = QtCore.QDateTime.currentDateTime()
         self.SetLastUpdateLabel(self.lastUpdate)
         
+        self.settings.setValue("last_update", self.lastUpdate)
+        
         if not self.showNotifications: return
         
         text = str(cntr) + self.tr(" items have been updated")
@@ -350,7 +352,6 @@ class MainForm(QtGui.QMainWindow):
         
     def SaveSettings(self):
         self.settings.setValue("mainform_size", self.size())
-        self.settings.setValue("last_update", self.lastUpdate)
         self.settings.sync()
             
     def LoadSettings(self):
