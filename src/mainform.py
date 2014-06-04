@@ -42,8 +42,11 @@ class MainForm(QtGui.QMainWindow):
         self.listView.setColumnWidth(self.minColumn, 70)
         self.listView.setColumnWidth(self.maxColumn, 70)
         self.listView.setColumnWidth(self.chartColumn, 30)
-        
+
         self.listView.itemSelectionChanged.connect(self.OnItemSelectionChanged)
+
+        self.upTextForegroundColor = QtGui.QColor(255, 0, 0)
+        self.downTextForegroundColor = QtGui.QColor(0, 128, 0)
         
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.OnTimer)
@@ -54,7 +57,6 @@ class MainForm(QtGui.QMainWindow):
         self.thread.resultReady.connect(self.OnUpdateItemsTaskFinished)
 
         self.CreateTray()
-        
         self.tray.show()
         
         self.setCentralWidget(self.listView)
@@ -71,8 +73,11 @@ class MainForm(QtGui.QMainWindow):
         
         self.seriesProvider = ChartDataProvider()
         self.seriesProvider.Update()
+
+        self.listView.setItemDelegateForColumn(self.chartColumn, ChartItemDelegate(self.listView, self.seriesProvider))
         
         self.LoadSettings()
+        self.LoadAppearanceSettings()
         self.LoadCountryIcons()
         self.UpdateListView()
         
@@ -259,18 +264,17 @@ class MainForm(QtGui.QMainWindow):
             else: item.setText(self.maxColumn, db_helper.FormatPrice(max, country))
             
             if last > price and price != 0 and last != 0:
-                item.setForeground(self.priceColumn, QtGui.QColor(0, 128, 0))
-                item.setForeground(self.lastColumn, QtGui.QColor(0, 128, 0))
+                item.setForeground(self.priceColumn, self.downTextForegroundColor)
+                item.setForeground(self.lastColumn, self.downTextForegroundColor)
             if last < price and price != 0 and last != 0: 
-                item.setForeground(self.priceColumn, QtGui.QColor(255, 0, 0))
-                item.setForeground(self.lastColumn, QtGui.QColor(255, 0, 0))
+                item.setForeground(self.priceColumn, self.upTextForegroundColor)
+                item.setForeground(self.lastColumn, self.upTextForegroundColor)
             
 
             self.seriesProvider.SetRow2Asin(cntr, asin)
             cntr = cntr + 1
 
             self.listView.addTopLevelItem(item)
-            self.listView.setItemDelegateForColumn(self.chartColumn, ChartItemDelegate(self.listView, self.seriesProvider))
 
     def OnItemSelectionChanged(self):
         enable_removing = len(self.listView.selectedItems()) > 0
@@ -364,6 +368,36 @@ class MainForm(QtGui.QMainWindow):
         self.resize(self.settings.value("mainform_size", QtCore.QSize(640, 200)))
         self.sys_notify = to_bool(self.settings.value("sys_notify", "false"))
         self.lastUpdate = self.settings.value("last_update", QtCore.QDateTime())
+
+    def LoadAppearanceSettings(self):
+        def ReadColorValue(key, def_color):
+            """
+            @type def_color: QtGui.QColor
+            """
+            if not self.settings.contains(key):
+                self.settings.setValue(key, def_color.name())
+
+            color = QtGui.QColor(self.settings.value(key, def_color.name()))
+
+            if color.isValid(): return color
+            return def_color
+
+        self.settings.beginGroup("Appearance")
+
+        delegete = self.listView.itemDelegateForColumn(self.chartColumn)
+
+        if delegete:
+            delegete.SetUpLineColor(ReadColorValue("graph_up_line_color", delegete.GetUpLineColor()))
+            delegete.SetUpFillColor(ReadColorValue("graph_up_fill_color", delegete.GetUpFillColor()))
+            delegete.SetDownLineColor(ReadColorValue("graph_down_line_color", delegete.GetDownLineColor()))
+            delegete.SetDownFillColor(ReadColorValue("graph_down_fill_color", delegete.GetDownFillColor()))
+            delegete.SetDefaultLineColor(ReadColorValue("graph_default_line_color", delegete.GetDefaultLineColor()))
+            delegete.SetDefaultFillColor(ReadColorValue("graph_default_fill_color", delegete.GetDefaultFillColor()))
+
+        self.upTextForegroundColor = ReadColorValue("text_up_foreground_color", self.upTextForegroundColor)
+        self.downTextForegroundColor = ReadColorValue("text_down_foreground_color", self.downTextForegroundColor)
+
+        self.settings.endGroup()
         
     def OnCopyASIN(self, asin):
         clipboard = QtGui.QApplication.clipboard()

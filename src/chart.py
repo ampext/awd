@@ -4,8 +4,18 @@ import db_helper
 class ChartItemDelegate(QtGui.QStyledItemDelegate):
     def __init__(self, parent, provider):
         QtGui.QStyledItemDelegate.__init__(self, parent)
+
         self.series_provider = provider
         self.parent = parent
+
+        self.defaultLineColor = QtGui.QColor("darkGray")
+        self.defaultFillColor = QtGui.QColor("lightGray")
+
+        self.upLineColor = QtGui.QColor("red")
+        self.upFillColor = QtGui.QColor("lightPink")
+
+        self.downLineColor = QtGui.QColor("darkGreen")
+        self.downFillColor = QtGui.QColor("lightGreen")
         
     def paint(self, painter, option, index):
         option_v4 = QtGui.QStyleOptionViewItemV4(option)
@@ -26,16 +36,16 @@ class ChartItemDelegate(QtGui.QStyledItemDelegate):
         min_y = min(values)
         points = []
 
-        color = QtGui.QColor("darkGray")
-        bg_color = QtGui.QColor("lightGray")
+        color = self.defaultLineColor
+        bg_color =self.defaultFillColor
 
         if len(values) > 1: 
             if values[-1] > values[-2]:
-                color = QtGui.QColor("red")
-                bg_color = QtGui.QColor("lightPink")
+                color = self.upLineColor
+                bg_color = self.upFillColor
             else:
-                color = QtGui.QColor("darkGreen")
-                bg_color = QtGui.QColor("lightGreen")
+                color = self.downLineColor
+                bg_color = self.downFillColor
 
             for i, value in enumerate(values):
                 x = i * option.rect.width() / (len(values) - 1)
@@ -67,7 +77,42 @@ class ChartItemDelegate(QtGui.QStyledItemDelegate):
         painter.drawPolyline(points)
         painter.restore()
         
+    def SetUpLineColor(self, color):
+        self.upLineColor = color
+
+    def GetUpLineColor(self):
+        return self.upLineColor
+
+    def SetDownLineColor(self, color):
+        self.downLineColor = color
+
+    def GetDownLineColor(self):
+        return self.downLineColor
+
+    def SetDefaultLineColor(self, color):
+        self.defaultLineColor = color
+
+    def GetDefaultLineColor(self):
+        return self.defaultLineColor
         
+    def SetUpFillColor(self, color):
+        self.upFillColor = color
+
+    def GetUpFillColor(self):
+        return self.upFillColor
+
+    def SetDownFillColor(self, color):
+        self.downFillColor = color
+
+    def GetDownFillColor(self):
+        return self.downFillColor
+
+    def SetDefaultFillColor(self, color):
+        self.defaultFillColor = color
+
+    def GetDefaultFillColor(self):
+        return self.defaultFillColor
+
 class ChartDataProvider(): 
     def __init__(self):
         self.series = {}
