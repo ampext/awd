@@ -329,7 +329,7 @@ class MainForm(QtGui.QMainWindow):
         
     def DoUpdateItems(self, cntr, up, down, error):
         if error != "" and cntr == 0:
-            notify.Notify(error, self, self.sys_notify)
+            notify.Notify(error, self, self.sysNotify)
             print(error)
             return
 
@@ -343,7 +343,7 @@ class MainForm(QtGui.QMainWindow):
         text = str(cntr) + self.tr(" items have been updated")
         if error != "": text += "\n" + error
         
-        notify.Notify(text, self, self.sys_notify)
+        notify.Notify(text, self, self.sysNotify)
         self.UpdateListView()     
         
     def OnShowSettings(self):
@@ -366,7 +366,7 @@ class MainForm(QtGui.QMainWindow):
         self.secretKey = str(self.settings.value("secret_key", ""))
         self.associateTag = str(self.settings.value("associate_tag", ""))
         self.resize(self.settings.value("mainform_size", QtCore.QSize(640, 200)))
-        self.sys_notify = to_bool(self.settings.value("sys_notify", "false"))
+        self.sysNotify = to_bool(self.settings.value("sys_notify", "false"))
         self.lastUpdate = self.settings.value("last_update", QtCore.QDateTime())
 
     def LoadAppearanceSettings(self):
@@ -420,7 +420,7 @@ class MainForm(QtGui.QMainWindow):
             print(attrs)
             
         except AWSError, e:
-            notify.Notify(e.GetFullDescription(), self, self.sys_notify)
+            notify.Notify(e.GetFullDescription(), self, self.sysNotify)
 
     def SetLastUpdateLabel(self, date):
         str_date = self.tr("n/a")
