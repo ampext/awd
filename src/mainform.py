@@ -3,6 +3,7 @@ from itemform import ItemForm
 from settingsform import SettingsForm, to_bool
 from requestform import RequestForm
 from aboutform import AboutForm
+from waitwidget import WaitWidget
 from worker import WorkerThread, TaskResult
 from functools import partial
 from chart import ChartItemDelegate, ChartDataProvider
@@ -101,8 +102,11 @@ class MainForm(QtGui.QMainWindow):
         statusbar = QtGui.QStatusBar(self)
 
         self.lastUpdateLabel = QtGui.QLabel(statusbar)
+        self.waitWidget = WaitWidget(statusbar)
+        self.waitWidget.hide()
 
         statusbar.addWidget(self.lastUpdateLabel)
+        statusbar.addWidget(self.waitWidget)
 
         self.setStatusBar(statusbar)
 
@@ -313,7 +317,10 @@ class MainForm(QtGui.QMainWindow):
             QtGui.QMessageBox.warning(self, self.tr("Warning"),
             self.tr("Amazon access parameters are not set. Go to \"Settings\" dialog and fill corresponded fields"))
             return
-
+        
+        self.waitWidget.show()
+        self.waitWidget.Start()
+        
         self.thread.start()
 
     def OnUpdateItemsTask(self, abort):
@@ -321,6 +328,9 @@ class MainForm(QtGui.QMainWindow):
         return TaskResult(result, 0, "")
         
     def OnUpdateItemsTaskFinished(self, result):
+        self.waitWidget.hide()
+        self.waitWidget.Stop()
+        
         if result.error != 0:
             QtGui.QMessageBox.information(self, self.tr("Fetching error"), result.message)
             return
