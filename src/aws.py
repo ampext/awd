@@ -62,11 +62,15 @@ def DoAWSRequest(params_dict, country, accessKey, secretKey, associateTag):
     params = rest.params + "&Signature=" + signature
     request_url = rest.host + rest.url + "?" + params
     
-    connection = httplib.HTTPConnection(rest.host)
-    connection.request(rest.method, rest.url + "?" + params)
-    result = connection.getresponse()
-    content = result.read()
-    connection.close()
+    try:
+        connection = httplib.HTTPConnection(rest.host)
+        connection.request(rest.method, rest.url + "?" + params)
+        result = connection.getresponse()
+        content = result.read()
+        connection.close()
+
+    except Exception as e:
+        raise AWSError(str(e), request_url, [])
     
     if result.status != 200:
         text = "server returns code " + str(result.status)
