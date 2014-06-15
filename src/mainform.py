@@ -88,15 +88,15 @@ class MainForm(QtGui.QMainWindow):
         self.SetLastUpdateLabel(self.lastUpdate)
 
     def CreateToolBar(self):
-        toolbar = QtGui.QToolBar(self)
+        self.toolbar = QtGui.QToolBar(self)
         self.CreateActions()
         
-        toolbar.addAction(self.addAction)
-        toolbar.addAction(self.editAction)
-        toolbar.addAction(self.removeAction)
-        toolbar.addAction(self.updateAction)
+        self.toolbar.addAction(self.addAction)
+        self.toolbar.addAction(self.editAction)
+        self.toolbar.addAction(self.removeAction)
+        self.toolbar.addAction(self.updateAction)
         
-        self.addToolBar(toolbar)
+        self.addToolBar(self.toolbar)
 
     def CreateStatusBar(self):
         statusbar = QtGui.QStatusBar(self)
@@ -321,6 +321,11 @@ class MainForm(QtGui.QMainWindow):
         self.waitWidget.show()
         self.waitWidget.Start()
         
+        self.toolbar.setEnabled(False)
+        self.addAction.setEnabled(False)
+        self.removeAction.setEnabled(False)
+        self.editAction.setEnabled(False)
+        
         self.thread.start()
 
     def OnUpdateItemsTask(self, abort):
@@ -330,6 +335,12 @@ class MainForm(QtGui.QMainWindow):
     def OnUpdateItemsTaskFinished(self, result):
         self.waitWidget.hide()
         self.waitWidget.Stop()
+        
+        self.toolbar.setEnabled(True)
+        self.addAction.setEnabled(True)
+        self.removeAction.setEnabled(True)
+        self.editAction.setEnabled(True)
+        self.OnItemSelectionChanged()
         
         if result.error != 0:
             QtGui.QMessageBox.information(self, self.tr("Fetching error"), result.message)
