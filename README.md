@@ -1,7 +1,7 @@
 ##Amazon Watch Dog
 **Amazon Watch Dog** is a program for monitoring prices on Amazon
 
-<img src="https://lh3.googleusercontent.com/-nDmUjk3Ed0I/UDkYP4WyxjI/AAAAAAAAB5s/l7rnbRvKdj4/s749/awd_04.png" alt="AWD screenshot"></img>
+<img src="http://ampext.github.io/images/awd.png" alt="AWD screenshot"></img>
 
 ##How To Use
 * Open "Settings" dialog and fill amazon account settings: *access key*, *secret key* and *associate tag*. You can got this on [Amazon Web Services](http://aws.amazon.com)
