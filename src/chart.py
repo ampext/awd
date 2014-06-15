@@ -126,7 +126,7 @@ class ChartDataProvider():
         items = db_helper.GetAllItems()
 
         for item in items:
-            self.series[item[1]] = db_helper.GetNLastPriceChanges(item[1], 5)
+            self.series[item[1]] = db_helper.GetNLastPriceChanges(item[1], 10)
 
     def GetData(self, row_index):
         return self.series[self.row2asin[row_index]]
