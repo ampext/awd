@@ -96,7 +96,7 @@ def GetPrice(asins, country, accessKey, secretKey, associateTag):
     for asins in asinsList:
         params["Operation"] = "ItemLookup"    
         params["ResponseGroup"] = "OfferFull"   
-        params["ItemId"] = ",".join(asins);
+        params["ItemId"] = ",".join(asins)
         
         result, request_url = DoAWSRequest(params, country, accessKey, secretKey, associateTag)
         
@@ -126,7 +126,25 @@ def GetAttributes(asin, country, accessKey, secretKey, associateTag):
     if not IsValidRequest(doc): raise AWSError("Invalid request", request_url, errors)
     
     try: return GetAttributesFromResponse(doc)
-    except Exception, e: raise AWSError("Request errors", request_url, errors)
+    except Exception, e: raise AWSError(str(e), request_url)
+
+def GetImageUrls(asin, country, accessKey, secretKey, associateTag):
+    if not asin: return {}
+    
+    params = {}
+    params["Operation"] = "ItemLookup"    
+    params["ResponseGroup"] = "Images"   
+    params["ItemId"] = asin
+    
+    result, request_url = DoAWSRequest(params, country, accessKey, secretKey, associateTag)
+
+    doc = xml.dom.minidom.parseString(result)
+    errors = GetErrorsFromResponse(doc)
+
+    if not IsValidRequest(doc): raise AWSError("Invalid request", request_url, errors)
+    
+    try: return GetImageUrlsFromResponse(doc)
+    except Exception, e: raise AWSError(str(e), request_url)
 
 def SplitList(lst, size):
     n = len(lst) / size
@@ -271,14 +289,64 @@ def GetAttributesFromResponse(doc):
         itemNode = itemNode.nextSibling   
         
     return attrs
+
+def GetImageUrlsFromResponse(doc):
+    urls = {}
+    
+    itemsNode = FindNodeByPath(doc.documentElement, "ItemLookupResponse/Items", True)
+    if not itemsNode: raise Exception("Items not found")
+
+    itemNodes = FindChildNodes(itemsNode, "Item")
+
+    for itemNode in itemNodes:  
+        asinNode = FindChildNode(itemNode, "ASIN")
+        
+        if not asinNode:
+            print("Item node does not has an ASIN child node")
+            continue
+            
+        asin = GetFirstChildNodeValue(asinNode)
+        
+        smallImageNode = FindChildNode(itemNode, "SmallImage")
+        mediumImageNode = FindChildNode(itemNode, "MediumImage")
+        largeImageNode = FindChildNode(itemNode, "LargeImage")
+        
+        asinUrls = {}
+        
+        if smallImageNode:
+            urlNode =  FindChildNode(smallImageNode, "URL")
+            if urlNode: asinUrls["S"] = GetFirstChildNodeValue(urlNode)
+
+        if mediumImageNode:
+            urlNode =  FindChildNode(mediumImageNode, "URL")
+            if urlNode: asinUrls["M"] = GetFirstChildNodeValue(urlNode)
+            
+        if largeImageNode:
+            urlNode =  FindChildNode(largeImageNode, "URL")
+            if urlNode: asinUrls["L"] = GetFirstChildNodeValue(urlNode)
+               
+               
+        urls[asin] = asinUrls
+        
+    return urls
+    
     
 def FindChildNode(parent, name):
-    if not parent.hasChildNodes(): return None
+    if not parent or not parent.hasChildNodes(): return None
 
     for child in parent.childNodes:
         if child.nodeType == child.ELEMENT_NODE and child.nodeName == name: return child
          
     return None
+
+def FindChildNodes(parent, name):
+    result = []
+
+    for child in parent.childNodes:
+        if child.nodeType == child.ELEMENT_NODE and child.nodeName == name:
+            result.append(child)
+         
+    return result
 
 def GetFirstChildNodeValue(node):
     if not node.hasChildNodes(): return None
