@@ -195,20 +195,17 @@ def ParseErrorNode(errorNode):
 def GetPricesFromResponse(doc):  
     prices = []
 
-    requestNode = FindNodeByPath(doc.documentElement, "ItemLookupResponse/Items/Request", True)
-    if not requestNode: raise Exception("Request node not found")
+    itemsNode = FindNodeByPath(doc.documentElement, "ItemLookupResponse/Items", True)
+    if not itemsNode: raise Exception("Items not found")
 
-    itemNode = requestNode.nextSibling
-    
-    if itemNode == None: raise Exception("Item node not found")
-    
-    while itemNode != None:
-        if itemNode.nodeType != itemNode.ELEMENT_NODE or itemNode.nodeName != "Item":
-            itemNode = itemNode.nextSibling
-            continue
-        
+    itemNodes = FindChildNodes(itemsNode, "Item")
+
+    for itemNode in itemNodes:  
         asinNode = FindChildNode(itemNode, "ASIN")
         if not asinNode: raise Exception("ASIN node not found")
+        
+        asin = GetFirstChildNodeValue(asinNode)
+        if not asin: raise Exception("ASIN node has not value")
         
         offersNode = FindChildNode(itemNode, "Offers")
         if not offersNode:
@@ -240,7 +237,7 @@ def GetPricesFromResponse(doc):
             itemNode = itemNode.nextSibling
             continue
         
-        prices.append([GetFirstChildNodeValue(asinNode), GetFirstChildNodeValue(amountNode), GetFirstChildNodeValue(currencyNode)])
+        prices.append([asin, GetFirstChildNodeValue(amountNode), GetFirstChildNodeValue(currencyNode)])
         
         itemNode = itemNode.nextSibling   
     
@@ -249,18 +246,12 @@ def GetPricesFromResponse(doc):
 def GetAttributesFromResponse(doc):
     attrs = {}
 
-    requestNode = FindNodeByPath(doc.documentElement, "ItemLookupResponse/Items/Request", True)
-    if not requestNode: raise Exception("Request node not found")
-    
-    itemNode = requestNode.nextSibling
-    
-    if itemNode == None: raise Exception("Items not found")
-    
-    while itemNode != None:
-        if itemNode.nodeType != itemNode.ELEMENT_NODE or itemNode.nodeName != "Item":
-            itemNode = itemNode.nextSibling
-            continue
-                
+    itemsNode = FindNodeByPath(doc.documentElement, "ItemLookupResponse/Items", True)
+    if not itemsNode: raise Exception("Items not found")
+
+    itemNodes = FindChildNodes(itemsNode, "Item")
+
+    for itemNode in itemNodes:  
         asinNode = FindChildNode(itemNode, "ASIN")
         if not asinNode: raise Exception("ASIN node not found")
         
@@ -300,12 +291,10 @@ def GetImageUrlsFromResponse(doc):
 
     for itemNode in itemNodes:  
         asinNode = FindChildNode(itemNode, "ASIN")
+        if not asinNode: raise Exception("ASIN node not found")
         
-        if not asinNode:
-            print("Item node does not has an ASIN child node")
-            continue
-            
         asin = GetFirstChildNodeValue(asinNode)
+        if not asin: raise Exception("ASIN node has not value")
         
         smallImageNode = FindChildNode(itemNode, "SmallImage")
         mediumImageNode = FindChildNode(itemNode, "MediumImage")
