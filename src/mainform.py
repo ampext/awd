@@ -4,31 +4,33 @@ from settingsform import SettingsForm, to_bool
 from requestform import RequestForm
 from aboutform import AboutForm
 from waitwidget import WaitWidget
+from tooltip import ImageToolTip
 from worker import WorkerThread, TaskResult
 from functools import partial
 from chart import ChartItemDelegate, ChartDataProvider
-from aws import GetAttributes, AWSError
+from aws import GetAttributes, GetImageUrls, AWSError
 
 import db_helper
 import helper
 import notify
-
+import urllib2
 
 class MainForm(QtGui.QMainWindow): 
     db_updated = QtCore.Signal(int, int, int, str)
 
     def __init__(self, parent = None):
-        QtGui.QMainWindow.__init__(self, parent)
+        QtGui.QMainWindow.__init__(self, parent)     
 
         self.CreateToolBar()
         self.CreateStatusBar()
+        self.CreateToolTip()
 
         self.removeAction.setEnabled(False)
         self.editAction.setEnabled(False)
                 
         headers = [self.tr(""), self.tr("ASIN"), self.tr("Label"), self.tr("Price"), self.tr("Last"), self.tr("Min"), self.tr("Max"), self.tr("Chart")]
         
-        self.listView = QtGui.QTreeWidget()
+        self.listView = QtGui.QTreeWidget(self)
         self.listView.setHeaderLabels(headers)
         self.listView.setRootIsDecorated(False)
         self.listView.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
@@ -45,6 +47,10 @@ class MainForm(QtGui.QMainWindow):
         self.listView.setColumnWidth(self.chartColumn, 30)
 
         self.listView.itemSelectionChanged.connect(self.OnItemSelectionChanged)
+        
+        self.listView.viewport().setMouseTracking(True)
+        self.listView.viewport().installEventFilter(self);
+        self.listView.installEventFilter(self)
 
         self.upTextForegroundColor = QtGui.QColor(255, 0, 0)
         self.downTextForegroundColor = QtGui.QColor(0, 128, 0)
@@ -53,9 +59,12 @@ class MainForm(QtGui.QMainWindow):
         self.timer.timeout.connect(self.OnTimer)
         self.timer.start()
         
-        self.thread = WorkerThread()
-        self.thread.setTask(lambda abort: self.OnUpdateItemsTask(abort))
-        self.thread.resultReady.connect(self.OnUpdateItemsTaskFinished)
+        self.updateThread = WorkerThread()
+        self.updateThread.setTask(lambda abort: self.OnUpdateItemsTask(abort))
+        self.updateThread.resultReady.connect(self.OnUpdateItemsTaskFinished)
+        
+        self.fetchThread = WorkerThread()
+        self.fetchThread.resultReady.connect(self.OnFetchImageTaskFinished)
 
         self.CreateTray()
         self.tray.show()
@@ -86,7 +95,7 @@ class MainForm(QtGui.QMainWindow):
         else: self.show()
 
         self.SetLastUpdateLabel(self.lastUpdate)
-
+        
     def CreateToolBar(self):
         self.toolbar = QtGui.QToolBar(self)
         self.CreateActions()
@@ -109,6 +118,10 @@ class MainForm(QtGui.QMainWindow):
         statusbar.addWidget(self.waitWidget)
 
         self.setStatusBar(statusbar)
+        
+    def CreateToolTip(self):
+        self.tooltip = ImageToolTip(self)
+        self.tooltipItem = None        
 
     def CreateTray(self):
         self.tray = QtGui.QSystemTrayIcon(self)
@@ -176,7 +189,8 @@ class MainForm(QtGui.QMainWindow):
         form.exec_()
 
     def exit(self):
-        if self.thread.isRunning(): self.thread.wait()
+        if self.updateThread.isRunning(): self.updateThread.wait()
+        if self.fetchThread.isRunning(): self.fetchThread.wait()
 
         self.SaveSettings()
         QtGui.qApp.quit()
@@ -185,7 +199,22 @@ class MainForm(QtGui.QMainWindow):
         self.hide()
         event.ignore()
         
-    def contextMenuEvent(self, event):
+    def eventFilter(self, obj, event):   
+        if event.type() == QtCore.QEvent.ContextMenu:
+            self.OnListViewContextMenuEvent(event)
+            return True
+
+        elif event.type() == QtCore.QEvent.MouseMove:
+            self.OnListViewMouseMoveEvent(event)
+            return True           
+        
+        elif event.type() == QtCore.QEvent.ToolTip:
+            self.OnListViewToolTipEvent(event)
+            return True
+        
+        return QtGui.QMainWindow.eventFilter(self, obj, event)
+        
+    def OnListViewContextMenuEvent(self, event):        
         asins = self.GetSelectedASINs()
         if not asins: return
     
@@ -202,6 +231,9 @@ class MainForm(QtGui.QMainWindow):
                 attrsAction = menu.addAction(self.tr("Get attributes..."))
                 attrsAction.triggered.connect(lambda: self.OnGetAttributes(asins[0]))     
                 
+                imagesAction = menu.addAction(self.tr("Get images..."))
+                imagesAction.triggered.connect(lambda: self.OnGetImages(asins[0]))     
+                
             menu.addSeparator()
             
         if len(asins) == 1:
@@ -211,6 +243,28 @@ class MainForm(QtGui.QMainWindow):
 
         if len(asins) > 0:
             menu.exec_(event.globalPos())
+            
+    def OnListViewMouseMoveEvent(self, event):
+        item = self.listView.itemAt(event.pos())
+        
+        if self.tooltipItem is None or item is self.tooltipItem:
+            return
+
+        if not item is self.tooltipItem:
+            self.tooltip.showTip(QtGui.QCursor.pos())
+            self.tooltipItem = item
+            self.FetchImage()
+            
+    def OnListViewToolTipEvent(self, event):
+        if self.tooltip.isVisible(): return
+
+        self.tooltipItem = self.listView.itemAt(event.pos())
+        
+        if self.tooltipItem is None:
+            self.tooltip.hideTip()
+        else:
+            self.tooltip.showTip(QtGui.QCursor.pos())
+            self.FetchImage()
 
     def GetSelectedASINs(self):
         items = self.listView.selectedItems()
@@ -309,7 +363,7 @@ class MainForm(QtGui.QMainWindow):
         self.UpdateListView()
         
     def OnUpdateItems(self):
-        if self.thread.isRunning():
+        if self.updateThread.isRunning():
             print("Worker thread is already running")
             return
         
@@ -326,7 +380,7 @@ class MainForm(QtGui.QMainWindow):
         self.removeAction.setEnabled(False)
         self.editAction.setEnabled(False)
         
-        self.thread.start()
+        self.updateThread.start()
 
     def OnUpdateItemsTask(self, abort):
         result = db_helper.UpdateDatabase(self.accessKey, self.secretKey, self.associateTag)
@@ -434,17 +488,69 @@ class MainForm(QtGui.QMainWindow):
         QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
         
     def OnGetAttributes(self, asin):
-
         try:
             country = db_helper.GetItemCountry(asin)
             attrs = GetAttributes(asin, country, self.accessKey, self.secretKey, self.associateTag)
             print(attrs)
             
         except AWSError, e:
-            notify.Notify(e.GetFullDescription(), self, self.sysNotify)
+            print(e.GetFullDescription())
+            
+    def OnGetImages(self, asin):
+        try:
+            country = db_helper.GetItemCountry(asin)
+            images = GetImageUrls(asin, country, self.accessKey, self.secretKey, self.associateTag)
+            print(images)
+            
+        except AWSError, e:
+            print(e.GetFullDescription())
 
     def SetLastUpdateLabel(self, date):
         str_date = self.tr("n/a")
         if not date.isNull() and date.isValid(): str_date = date.toString(QtCore.Qt.SystemLocaleLongDate)
 
         self.lastUpdateLabel.setText(self.tr("Last update:") + " " + str_date)
+        
+    def FetchImage(self):
+        if self.tooltipItem is None: return
+        asin = self.tooltipItem.text(self.asinColumn)
+        
+        if helper.debug_mode:
+            print("fetching for asin {0}".format(asin))
+        
+        if self.fetchThread.isRunning():
+            self.fetchThread.requestInterruption()
+            return
+        
+        self.fetchThread.setTask(lambda abort: self.OnFetchImageTask(asin, abort))
+        self.fetchThread.start()
+
+    def OnFetchImageTask(self, asin, abort):
+        country = db_helper.GetItemCountry(asin)
+        urls = GetImageUrls(asin, country, self.accessKey, self.secretKey, self.associateTag)
+        
+        if not asin in urls: return TaskResult(None, 1, "can not find image URLs for asin {0}".format(asin))
+        
+        medium_image_url = urls[asin]["M"]
+        
+        if not medium_image_url: return TaskResult(None, 1, "no \"Medium\" image URL for asin {0}".format(asin))
+        
+        try:
+            request = urllib2.urlopen(medium_image_url, timeout=10)
+            if request.getcode() != 200: return TaskResult(None, 1, "server returns {0} code for {1}".format(request.getcode(), medium_image_url))
+        
+            image = QtGui.QImage.fromData(request.read())
+            
+            if image.isNull(): return  TaskResult(None, 1, "server returns broken image (size : {0}, mimetype: {1})".format(0, request.getinfo().gettype()))
+            else:
+                return TaskResult(image, 1, "")
+            
+        except Exception:
+            return TaskResult(None, 1, "can retrive image from {0}".format(medium_image_url))
+
+        return TaskResult(None, 1, "")
+        
+    def OnFetchImageTaskFinished(self, result):
+        if self.tooltip.isVisible():
+            if result.result == None: self.tooltip.SetPixmap(None)
+            else: self.tooltip.SetPixmap(QtGui.QPixmap.fromImage(result.result))

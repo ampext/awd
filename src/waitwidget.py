@@ -20,6 +20,9 @@ class WaitWidget(QtGui.QWidget):
         self.cachedSize = QtCore.QSize(-1, -1)
         self.setMinimumSize(10, 10)
         
+    def sizeHint(self):
+        return QtCore.QSize(32, 32)
+        
     def SetColor(self, color):
         self.color = color
         
