@@ -16,8 +16,6 @@ import notify
 import urllib2
 
 class MainForm(QtGui.QMainWindow): 
-    db_updated = QtCore.Signal(int, int, int, str)
-
     def __init__(self, parent = None):
         QtGui.QMainWindow.__init__(self, parent)     
 
@@ -73,8 +71,6 @@ class MainForm(QtGui.QMainWindow):
         self.resize(640, 200);
         self.setWindowTitle(self.tr("Items list"))
         self.setWindowIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "tray.png"))
-
-        self.db_updated.connect(self.DoUpdateItems)
         
         self.timer.setInterval(60000 * 20)
         self.hideAfterStart = True
