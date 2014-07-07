@@ -242,11 +242,16 @@ class MainForm(QtGui.QMainWindow):
             
     def OnListViewMouseMoveEvent(self, event):
         item = self.listView.itemAt(event.pos())
+
+        if item is None:
+            self.tooltipItem = None
+            self.tooltip.hideTip()
         
         if self.tooltipItem is None or item is self.tooltipItem:
             return
 
         if not item is self.tooltipItem:
+            print("self.tooltip.showTip -> {0}".format(item))
             self.tooltip.showTip(QtGui.QCursor.pos())
             self.tooltipItem = item
             self.FetchImage()
