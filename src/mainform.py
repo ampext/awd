@@ -157,6 +157,7 @@ class MainForm(QtGui.QMainWindow):
         self.updateAction.triggered.connect(self.OnUpdateItems)
         
         self.settingsAction = QtGui.QAction(self.tr("Settings..."), self)
+        self.settingsAction.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "settings.png"))
         self.settingsAction.triggered.connect(self.OnShowSettings)
         
         self.itemsAction = QtGui.QAction(self.tr("Items..."), self)
