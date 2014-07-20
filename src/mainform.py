@@ -161,6 +161,7 @@ class MainForm(QtGui.QMainWindow):
         self.settingsAction.triggered.connect(self.OnShowSettings)
         
         self.itemsAction = QtGui.QAction(self.tr("Items..."), self)
+        self.itemsAction.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "list.png"))
         self.itemsAction.triggered.connect(self.show)    
         
         self.quitAction = QtGui.QAction(self.tr("Quit"), self)
