@@ -69,7 +69,7 @@ class MainForm(QtGui.QMainWindow):
         
         self.setCentralWidget(self.listView)
         self.resize(640, 200);
-        self.setWindowTitle(self.tr("Items list"))
+        self.setWindowTitle(self.tr("Amazon Watch Dog"))
         self.setWindowIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "tray.png"))
         
         self.timer.setInterval(60000 * 20)
