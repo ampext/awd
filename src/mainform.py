@@ -93,7 +93,7 @@ class MainForm(QtGui.QMainWindow):
         self.SetLastUpdateLabel(self.lastUpdate)
         
     def CreateToolBar(self):
-        self.toolbar = QtGui.QToolBar(self)
+        self.toolbar = QtGui.QToolBar(self.tr("Main Toolbar"), self)
         self.CreateActions()
         
         self.toolbar.addAction(self.addAction)
