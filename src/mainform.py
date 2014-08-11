@@ -253,7 +253,6 @@ class MainForm(QtGui.QMainWindow):
             return
 
         if not item is self.tooltipItem:
-            print("self.tooltip.showTip -> {0}".format(item))
             self.tooltip.showTip(QtGui.QCursor.pos())
             self.tooltipItem = item
             self.FetchImage()
