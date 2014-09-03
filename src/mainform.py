@@ -8,6 +8,7 @@ from tooltip import ImageToolTip
 from worker import WorkerThread, TaskResult
 from functools import partial
 from chart import ChartItemDelegate, ChartDataProvider
+from imagecache import ImageCache
 from aws import GetAttributes, GetImageUrls, AWSError
 
 import db_helper
@@ -79,6 +80,8 @@ class MainForm(QtGui.QMainWindow):
         
         self.seriesProvider = ChartDataProvider()
         self.seriesProvider.Update()
+        
+        self.imageCache = ImageCache(helper.GetConfigDir() + QtCore.QDir.separator() + "cache")
 
         self.listView.setItemDelegateForColumn(self.chartColumn, ChartItemDelegate(self.listView, self.seriesProvider))
         
@@ -517,15 +520,20 @@ class MainForm(QtGui.QMainWindow):
         if self.tooltipItem is None: return
         asin = self.tooltipItem.text(self.asinColumn)
         
-        if helper.debug_mode:
-            print("fetching for asin {0}".format(asin))
-        
         if self.fetchThread.isRunning():
             self.fetchThread.requestInterruption()
             return
         
-        self.fetchThread.setTask(lambda abort: self.OnFetchImageTask(asin, abort))
-        self.fetchThread.start()
+        image = self.imageCache.Get(asin)
+        
+        if not image:
+            if helper.debug_mode:
+                print("fetching image for asin {0}".format(asin))
+            
+            self.fetchThread.setTask(lambda abort: self.OnFetchImageTask(asin, abort))
+            self.fetchThread.start()
+        else:           
+            self.OnFetchImageTaskFinished(TaskResult(image, 1, ""))
 
     def OnFetchImageTask(self, asin, abort):
         country = db_helper.GetItemCountry(asin)
@@ -545,6 +553,12 @@ class MainForm(QtGui.QMainWindow):
             
             if image.isNull(): return  TaskResult(None, 1, "server returns broken image (size : {0}, mimetype: {1})".format(0, request.getinfo().gettype()))
             else:
+                res = self.imageCache.Put(asin, image)
+                
+                if helper.debug_mode:            
+                    if res: print("cached image for asin {0}".format(asin))
+                    else: print("caching image for asin {0} failed".format(asin))
+                    
                 return TaskResult(image, 1, "")
             
         except Exception:
@@ -553,6 +567,6 @@ class MainForm(QtGui.QMainWindow):
         return TaskResult(None, 1, "")
         
     def OnFetchImageTaskFinished(self, result):
-        if self.tooltip.isVisible():
+        if self.tooltip.isVisible():           
             if result.result == None: self.tooltip.SetPixmap(None)
             else: self.tooltip.SetPixmap(QtGui.QPixmap.fromImage(result.result))
