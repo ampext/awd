@@ -37,7 +37,7 @@ class ImageCache():
             
     def Touch(self, key):
         if self.Check(key) and key not in self.cache:
-            self.cache[key] = QtGui.QImage( self.cacheDir.filePath(self.mapping[key]))
+            self.cache[key] = QtGui.QImage(self.cacheDir.filePath(self.mapping[key]))
             
             if len(self.cacheQueue) == self.cacheQueue.maxlen:
                 del self.cache[self.cacheQueue.popleft()]
@@ -53,15 +53,17 @@ class ImageCache():
     
         image_path = self.CreateImagePathForKey(key)
         self.mapping[key] = image_path
-        
+           
+        res =  image.save(image_path)
         self.Touch(key)
-    
-        return image.save(image_path)
+        
+        return res
     
     def Get(self, key):
         if not self.Check(key): return None
     
         self.Touch(key)
+        
         return self.cache[key]
     
     def Clear(self):       
