@@ -1,17 +1,16 @@
 from PySide import QtGui, QtCore
 import notify
 import helper
-import os
-
 
 def to_bool(value):
     if isinstance(value, unicode): return value.lower() == "true"
     return bool(value)
 
 class SettingsForm(QtGui.QDialog): 
-    def __init__(self, parent, settings):
+    def __init__(self, parent, settings, cache):
         QtGui.QDialog.__init__(self, parent)
         self.settings = settings
+        self.cache = cache
         
         layout = QtGui.QVBoxLayout()
         
@@ -33,7 +32,10 @@ class SettingsForm(QtGui.QDialog):
         cancelButton.clicked.connect(self.close)
         
         testButton = QtGui.QPushButton(self.tr("Test"), self)
-        testButton.clicked.connect(self.TestNotification)
+        testButton.clicked.connect(self.OnTestNotification)
+        
+        clearButton = QtGui.QPushButton(self.tr("Clear image cache"), self)
+        clearButton.clicked.connect(self.OnClearCache)
         
         self.notifyGB = QtGui.QGroupBox(self.tr("Notify options"), self)
         
@@ -61,6 +63,12 @@ class SettingsForm(QtGui.QDialog):
         layout.addWidget(self.notifyCheck)
         layout.addWidget(self.notifyGB)
         layout.addWidget(self.hideCheck)
+        
+        subLayout = QtGui.QHBoxLayout()
+        subLayout.addWidget(clearButton)
+        subLayout.addStretch()
+        
+        layout.addLayout(subLayout)
         layout.addStretch()
         
         subLayout = QtGui.QHBoxLayout()
@@ -100,5 +108,9 @@ class SettingsForm(QtGui.QDialog):
         self.sendCheck.setChecked(to_bool(self.settings.value("sys_notify", "true")))
         self.notifyGB.setEnabled(self.notifyCheck.isChecked())
         
-    def TestNotification(self):
-        notify.Notify(self.tr("Notification test"), self, self.sendCheck.isChecked());
+    def OnTestNotification(self):
+        notify.Notify(self.tr("Notification test"), self, self.sendCheck.isChecked())
+        
+    def OnClearCache(self):
+        self.cache.Clear()
+        self.cache.Update()
