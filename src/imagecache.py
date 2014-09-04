@@ -1,19 +1,18 @@
 from PySide import QtGui, QtCore
-from os import listdir, path
 from collections import deque
 import helper
 
 class ImageCache():
     
     def __init__(self, path, size = 32):
-        self.path = path
         self.mapping = {}    
         self.cache = {}
         self.cacheQueue = deque(maxlen = size)
+        self.cacheDir = QtCore.QDir(path)
         
-        if not QtCore.QFile.exists(path):
+        if not self.cacheDir.exists():
             print("created path: {0}".format(path))
-            QtCore.QDir().mkpath(path)
+            self.cacheDir.mkpath(".")
         
         self.Update()
 
@@ -22,14 +21,13 @@ class ImageCache():
         self.cache.clear()
         self.cacheQueue.clear()
         
-        files = [f for f in listdir(self.path) if path.isfile(path.join(self.path, f))]
+        files = self.cacheDir.entryList(["*.png", "*.jpg"], QtCore.QDir.Files)
         
         for f in files:
-            root, ext = path.splitext(f)
-            if not root: continue
-            
-            if ext == ".png" or ext == ".jpg":
-                self.mapping[root] = f
+            key = f[0:f.rfind(".")]
+            if not key: continue
+
+            self.mapping[key] = f
                 
         for key in self.mapping:
             self.Touch(key)
@@ -39,7 +37,7 @@ class ImageCache():
             
     def Touch(self, key):
         if self.Check(key) and key not in self.cache:
-            self.cache[key] = QtGui.QImage(path.join(self.path, self.mapping[key]))
+            self.cache[key] = QtGui.QImage( self.cacheDir.filePath(self.mapping[key]))
             
             if len(self.cacheQueue) == self.cacheQueue.maxlen:
                 del self.cache[self.cacheQueue.popleft()]
@@ -66,8 +64,20 @@ class ImageCache():
         self.Touch(key)
         return self.cache[key]
     
-    def Clear(self):
-        pass
+    def Clear(self):       
+        files = self.cacheDir.entryList(["*.png", "*.jpg"], QtCore.QDir.Files)
+        
+        cntr = 0
+        
+        for f in files:
+            if self.cacheDir.remove(f): cntr = cntr + 1
+            
+        self.mapping.clear()
+        self.cache.clear()
+        self.cacheQueue.clear()
+        
+        if helper.debug_mode:
+            print("cache cleared: {0} file(s) deleted".format(cntr))
     
     def CreateImagePathForKey(self, key):
-        return self.path + QtCore.QDir.separator() + key + ".jpg"
+        return self.cacheDir.filePath(key + ".jpg")
