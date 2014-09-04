@@ -427,7 +427,7 @@ class MainForm(QtGui.QMainWindow):
         self.UpdateListView()     
         
     def OnShowSettings(self):
-        form = SettingsForm(self, self.settings)
+        form = SettingsForm(self, self.settings, self.imageCache)
         if form.exec_() == QtGui.QDialog.Accepted: self.LoadSettings()
         
     def OnBuildRequest(self):
