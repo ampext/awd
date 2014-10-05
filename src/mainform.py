@@ -6,7 +6,6 @@ from aboutform import AboutForm
 from waitwidget import WaitWidget
 from tooltip import ImageToolTip
 from worker import WorkerThread, TaskResult
-from functools import partial
 from chart import ChartItemDelegate, ChartDataProvider
 from imagecache import ImageCache
 from aws import GetAttributes, GetImageUrls, AWSError
@@ -16,9 +15,10 @@ import helper
 import notify
 import urllib2
 
-class MainForm(QtGui.QMainWindow): 
-    def __init__(self, parent = None):
-        QtGui.QMainWindow.__init__(self, parent)     
+
+class MainForm(QtGui.QMainWindow):
+    def __init__(self, parent=None):
+        QtGui.QMainWindow.__init__(self, parent)
 
         self.CreateToolBar()
         self.CreateStatusBar()
@@ -26,14 +26,14 @@ class MainForm(QtGui.QMainWindow):
 
         self.removeAction.setEnabled(False)
         self.editAction.setEnabled(False)
-                
+
         headers = [self.tr(""), self.tr("ASIN"), self.tr("Label"), self.tr("Price"), self.tr("Last"), self.tr("Min"), self.tr("Max"), self.tr("Chart")]
         
         self.listView = QtGui.QTreeWidget(self)
         self.listView.setHeaderLabels(headers)
         self.listView.setRootIsDecorated(False)
         self.listView.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
-        
+
         self.countryColumn, self.asinColumn, self.labelColumn, self.priceColumn, self.lastColumn, self.minColumn, self.maxColumn, self.chartColumn = range(0, 8)
         
         self.listView.setColumnWidth(self.countryColumn, 20)
