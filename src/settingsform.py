@@ -130,7 +130,6 @@ class SettingsForm(QtGui.QDialog):
             self.SelectPanel(self.listWidget.row(currentItem))   
         
     def OnOk(self):
-        print(self.listWidget.sizeHint())
         self.SaveSettings()
         self.accept()
         
