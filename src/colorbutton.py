@@ -35,7 +35,9 @@ class ColorButton(QtGui.QPushButton):
         self.color = QtGui.QColorDialog.getColor(self.color, self, self.tr("Select color"), QtGui.QColorDialog.DontUseNativeDialog)
         
     def SetColor(self, color):
-        self.color = color
+        if self.color != color:
+            self.color = color
+            self.repaint()
         
     def GetColor(self):
         return self.color
