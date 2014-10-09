@@ -131,7 +131,8 @@ class SettingsForm(QtGui.QDialog):
         
     def CreateAppearancePanel(self, parent):
         panel = QtGui.QWidget(parent)
-        layout = QtGui.QFormLayout()
+        layout = QtGui.QVBoxLayout()
+        formLayout = QtGui.QFormLayout()
         
         self.ulcButton = ColorButton(parent)
         self.ufcButton = ColorButton(parent)
@@ -141,18 +142,29 @@ class SettingsForm(QtGui.QDialog):
         self.nfcButton = ColorButton(parent)
         self.utcButton = ColorButton(parent)
         self.dtcButton = ColorButton(parent)
+        
+        self.restoreButton = QtGui.QPushButton(self.tr("Restore defaults"), parent)
+        self.restoreButton.clicked.connect(self.OnRestoreDefaults)
 
-        layout.addRow(self.tr("Up line color"), self.ulcButton)
-        layout.addRow(self.tr("Up fill color"), self.ufcButton)
+        formLayout.addRow(self.tr("Up line color"), self.ulcButton)
+        formLayout.addRow(self.tr("Up fill color"), self.ufcButton)
 
-        layout.addRow(self.tr("Down line color"), self.dlcButton)
-        layout.addRow(self.tr("Down fill color"), self.dfcButton)
+        formLayout.addRow(self.tr("Down line color"), self.dlcButton)
+        formLayout.addRow(self.tr("Down fill color"), self.dfcButton)
 
-        layout.addRow(self.tr("Neutral line color"), self.nlcButton)
-        layout.addRow(self.tr("Neutral fill color"), self.nfcButton)
+        formLayout.addRow(self.tr("Neutral line color"), self.nlcButton)
+        formLayout.addRow(self.tr("Neutral fill color"), self.nfcButton)
 
-        layout.addRow(self.tr("Up text color"), self.utcButton)
-        layout.addRow(self.tr("Down text color"), self.dtcButton)
+        formLayout.addRow(self.tr("Up text color"), self.utcButton)
+        formLayout.addRow(self.tr("Down text color"), self.dtcButton)
+        
+        layout.addLayout(formLayout)
+
+        subLayout = QtGui.QHBoxLayout()
+        subLayout.addWidget(self.restoreButton)
+        subLayout.addStretch()
+        
+        layout.addLayout(subLayout)
         
         panel.setLayout(layout)
 
@@ -217,7 +229,6 @@ class SettingsForm(QtGui.QDialog):
         self.dfcButton.SetColor(ReadColorValue(self.settings, "graph_down_fill_color", defaults.GetDefaultDownFillColor()))
         self.nlcButton.SetColor(ReadColorValue(self.settings, "graph_neutral_line_color", defaults.GetDefaultNeutralLineColor()))
         self.nfcButton.SetColor(ReadColorValue(self.settings, "graph_neutral_fill_color", defaults.GetDefaultNeutralFillColor()))
-
         self.utcButton.SetColor(ReadColorValue(self.settings, "text_up_foreground_color", defaults.GetTextUpForegroundColor()))
         self.dtcButton.SetColor(ReadColorValue(self.settings, "text_down_foreground_color", defaults.GetTextDownForegroundColor()))
 
@@ -229,3 +240,13 @@ class SettingsForm(QtGui.QDialog):
     def OnClearCache(self):
         self.cache.Clear()
         self.cache.Update()
+
+    def OnRestoreDefaults(self):
+        self.ulcButton.SetColor(defaults.GetDefaultUpLineColor())
+        self.ufcButton.SetColor(defaults.GetDefaultUpFillColor())
+        self.dlcButton.SetColor(defaults.GetDefaultDownLineColor())
+        self.dfcButton.SetColor(defaults.GetDefaultDownFillColor())
+        self.nlcButton.SetColor(defaults.GetDefaultNeutralLineColor())
+        self.nfcButton.SetColor(defaults.GetDefaultNeutralFillColor())
+        self.utcButton.SetColor(defaults.GetTextUpForegroundColor())
+        self.dtcButton.SetColor(defaults.GetTextDownForegroundColor())
