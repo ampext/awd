@@ -1,10 +1,10 @@
 from PySide import QtGui, QtCore
-import notify
-import helper
+from colorbutton import ColorButton
+from helper import ReadColorValue, to_bool
 
-def to_bool(value):
-    if isinstance(value, unicode): return value.lower() == "true"
-    return bool(value)
+import notify
+import defaults
+
 
 class SettingsForm(QtGui.QDialog): 
     def __init__(self, parent, settings, cache):
@@ -20,6 +20,15 @@ class SettingsForm(QtGui.QDialog):
         self.listWidget.setUniformItemSizes(True)
         self.listWidget.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed))
         self.listWidget.currentItemChanged.connect(self.OnListItemChanged)
+        self.listWidget.itemSelectionChanged.connect(self.OnListSelectionChanged)
+        
+#        selectionColor = self.palette().color(QtGui.QPalette.Highlight)
+
+#        style = """QListView {{ show-decoration-selected: 0; }}
+#                QListView::item:selected {{ background-color: {0}; }}
+#                QListView::item:hover {{ background: transparent; }}""".format(selectionColor.name())
+
+#        self.listWidget.setStyleSheet(style)
         
         generalItem = QtGui.QListWidgetItem(QtGui.QIcon("images" + QtCore.QDir.separator() + "general.png"), self.tr("General"))
         apprItem = QtGui.QListWidgetItem(QtGui.QIcon("images" + QtCore.QDir.separator() + "appearance.png"), self.tr("Appearance"))
@@ -30,7 +39,7 @@ class SettingsForm(QtGui.QDialog):
         self.listWidget.addItem(generalItem)
         self.listWidget.addItem(apprItem)
         
-        self.listWidget.setMaximumHeight(self.listWidget.sizeHintForRow(0) + 10)
+        self.listWidget.setMaximumHeight(self.listWidget.sizeHintForRow(0) + 4)
         
         self.stackedWidget = QtGui.QStackedWidget(self)
         self.stackedWidget.addWidget(self.CreateGeneralPanel(self.stackedWidget))
@@ -56,8 +65,10 @@ class SettingsForm(QtGui.QDialog):
         
         self.setLayout(layout)
 
+        self.lastPanelIndex = 0
+        self.SelectPanel(self.lastPanelIndex)
+
         self.LoadSettings()
-        self.SelectPanel(0)
         self.setWindowTitle(self.tr("Settings"))
         
     def CreateGeneralPanel(self, parent):
@@ -119,15 +130,46 @@ class SettingsForm(QtGui.QDialog):
         return panel
         
     def CreateAppearancePanel(self, parent):
-        return QtGui.QWidget(parent)
+        panel = QtGui.QWidget(parent)
+        layout = QtGui.QFormLayout()
+        
+        self.ulcButton = ColorButton(parent)
+        self.ufcButton = ColorButton(parent)
+        self.dlcButton = ColorButton(parent)
+        self.dfcButton = ColorButton(parent)
+        self.nlcButton = ColorButton(parent)
+        self.nfcButton = ColorButton(parent)
+        self.utcButton = ColorButton(parent)
+        self.dtcButton = ColorButton(parent)
+
+        layout.addRow(self.tr("Up line color"), self.ulcButton)
+        layout.addRow(self.tr("Up fill color"), self.ufcButton)
+
+        layout.addRow(self.tr("Down line color"), self.dlcButton)
+        layout.addRow(self.tr("Down fill color"), self.dfcButton)
+
+        layout.addRow(self.tr("Neutral line color"), self.nlcButton)
+        layout.addRow(self.tr("Neutral fill color"), self.nfcButton)
+
+        layout.addRow(self.tr("Up text color"), self.utcButton)
+        layout.addRow(self.tr("Down text color"), self.dtcButton)
+        
+        panel.setLayout(layout)
+
+        return panel
     
     def SelectPanel(self, index):
+        self.lastPanelIndex = index
         self.stackedWidget.setCurrentIndex(index)
         self.listWidget.setCurrentItem(self.listWidget.item(index))
         
     def OnListItemChanged(self, currentItem, previousItem):
         if currentItem:
             self.SelectPanel(self.listWidget.row(currentItem))   
+            
+    def OnListSelectionChanged(self):
+        if len(self.listWidget.selectedItems()) == 0:
+            self.SelectPanel(self.lastPanelIndex)
         
     def OnOk(self):
         self.SaveSettings()
@@ -142,6 +184,19 @@ class SettingsForm(QtGui.QDialog):
         self.settings.setValue("notifications", self.notifyCheck.isChecked())
         self.settings.setValue("sys_notify", self.sendCheck.isChecked())
         
+        self.settings.beginGroup("Appearance")
+        
+        self.settings.setValue("graph_up_line_color", self.ulcButton.GetColor().name())
+        self.settings.setValue("graph_up_fill_color", self.ufcButton.GetColor().name())
+        self.settings.setValue("graph_down_line_color", self.dlcButton.GetColor().name())
+        self.settings.setValue("graph_down_fill_color", self.dfcButton.GetColor().name())
+        self.settings.setValue("graph_neutral_line_color", self.nlcButton.GetColor().name())
+        self.settings.setValue("graph_neutral_fill_color", self.nfcButton.GetColor().name())
+        self.settings.setValue("text_up_foreground_color", self.utcButton.GetColor().name())
+        self.settings.setValue("text_down_foreground_color", self.dtcButton.GetColor().name())
+
+        self.settings.endGroup()
+
         self.settings.sync()
         
     def LoadSettings(self):
@@ -153,6 +208,20 @@ class SettingsForm(QtGui.QDialog):
         self.notifyCheck.setChecked(to_bool(self.settings.value("notifications", "true")))
         self.sendCheck.setChecked(to_bool(self.settings.value("sys_notify", "true")))
         self.notifyGB.setEnabled(self.notifyCheck.isChecked())
+        
+        self.settings.beginGroup("Appearance")
+        
+        self.ulcButton.SetColor(ReadColorValue(self.settings, "graph_up_line_color", defaults.GetDefaultUpLineColor()))
+        self.ufcButton.SetColor(ReadColorValue(self.settings, "graph_up_fill_color", defaults.GetDefaultUpFillColor()))
+        self.dlcButton.SetColor(ReadColorValue(self.settings, "graph_down_line_color", defaults.GetDefaultDownLineColor()))
+        self.dfcButton.SetColor(ReadColorValue(self.settings, "graph_down_fill_color", defaults.GetDefaultDownFillColor()))
+        self.nlcButton.SetColor(ReadColorValue(self.settings, "graph_neutral_line_color", defaults.GetDefaultNeutralLineColor()))
+        self.nfcButton.SetColor(ReadColorValue(self.settings, "graph_neutral_fill_color", defaults.GetDefaultNeutralFillColor()))
+
+        self.utcButton.SetColor(ReadColorValue(self.settings, "text_up_foreground_color", defaults.GetTextUpForegroundColor()))
+        self.dtcButton.SetColor(ReadColorValue(self.settings, "text_down_foreground_color", defaults.GetTextDownForegroundColor()))
+
+        self.settings.endGroup()
         
     def OnTestNotification(self):
         notify.Notify(self.tr("Notification test"), self, self.sendCheck.isChecked())

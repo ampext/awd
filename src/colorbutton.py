@@ -17,7 +17,7 @@ class ColorButton(QtGui.QPushButton):
         self.style().drawControl(QtGui.QStyle.CE_PushButtonBevel, buttonOption, painter, self)
         
         rect = self.style().subElementRect(QtGui.QStyle.SE_PushButtonContents, buttonOption, self)
-        rect.adjust(4, 4, -5, -5)
+        rect.adjust(2, 2, -3, -3)
         
         painter.setPen(QtGui.QPen(self.color.darker()))
         painter.setBrush(QtGui.QBrush(self.color))

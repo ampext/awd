@@ -1,5 +1,6 @@
 from PySide import QtGui, QtCore
 import db_helper
+import defaults
 
 class ChartItemDelegate(QtGui.QStyledItemDelegate):
     def __init__(self, parent, provider):
@@ -8,14 +9,14 @@ class ChartItemDelegate(QtGui.QStyledItemDelegate):
         self.series_provider = provider
         self.parent = parent
 
-        self.defaultLineColor = QtGui.QColor("darkGray")
-        self.defaultFillColor = QtGui.QColor("lightGray")
+        self.neutralLineColor = defaults.GetDefaultNeutralLineColor()
+        self.neutralFillColor = defaults.GetDefaultNeutralFillColor()
 
-        self.upLineColor = QtGui.QColor("red")
-        self.upFillColor = QtGui.QColor("lightPink")
+        self.upLineColor = defaults.GetDefaultUpLineColor()
+        self.upFillColor = defaults.GetDefaultUpFillColor()
 
-        self.downLineColor = QtGui.QColor("darkGreen")
-        self.downFillColor = QtGui.QColor("lightGreen")
+        self.downLineColor = defaults.GetDefaultDownLineColor()
+        self.downFillColor = defaults.GetDefaultDownFillColor()
         
     def paint(self, painter, option, index):
         option_v4 = QtGui.QStyleOptionViewItemV4(option)
@@ -36,8 +37,8 @@ class ChartItemDelegate(QtGui.QStyledItemDelegate):
         min_y = min(values)
         points = []
 
-        color = self.defaultLineColor
-        bg_color =self.defaultFillColor
+        color = self.neutralLineColor
+        bg_color =self.neutralFillColor
 
         if len(values) > 1: 
             if values[-1] > values[-2]:
@@ -76,7 +77,7 @@ class ChartItemDelegate(QtGui.QStyledItemDelegate):
         painter.setPen(color)
         painter.drawPolyline(points)
         painter.restore()
-        
+       
     def SetUpLineColor(self, color):
         self.upLineColor = color
 
@@ -89,11 +90,11 @@ class ChartItemDelegate(QtGui.QStyledItemDelegate):
     def GetDownLineColor(self):
         return self.downLineColor
 
-    def SetDefaultLineColor(self, color):
-        self.defaultLineColor = color
+    def SetNeutralLineColor(self, color):
+        self.neutralLineColor = color
 
-    def GetDefaultLineColor(self):
-        return self.defaultLineColor
+    def GetNeutralLineColor(self):
+        return self.neutralLineColor
         
     def SetUpFillColor(self, color):
         self.upFillColor = color
@@ -107,11 +108,12 @@ class ChartItemDelegate(QtGui.QStyledItemDelegate):
     def GetDownFillColor(self):
         return self.downFillColor
 
-    def SetDefaultFillColor(self, color):
-        self.defaultFillColor = color
+    def SetNeutralFillColor(self, color):
+        self.neutralFillColor = color
 
-    def GetDefaultFillColor(self):
-        return self.defaultFillColor
+    def GetNeutralFillColor(self):
+        return self.neutralFillColor
+
 
 class ChartDataProvider(): 
     def __init__(self):

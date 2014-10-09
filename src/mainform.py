@@ -1,6 +1,6 @@
 from PySide import QtGui, QtCore, QtSql
 from itemform import ItemForm
-from settingsform import SettingsForm, to_bool
+from settingsform import SettingsForm
 from requestform import RequestForm
 from aboutform import AboutForm
 from waitwidget import WaitWidget
@@ -9,9 +9,11 @@ from worker import WorkerThread, TaskResult
 from chart import ChartItemDelegate, ChartDataProvider
 from imagecache import ImageCache
 from aws import GetAttributes, GetImageUrls, AWSError
+from helper import ReadColorValue, to_bool
 
 import db_helper
 import helper
+import defaults
 import notify
 import urllib2
 
@@ -51,8 +53,8 @@ class MainForm(QtGui.QMainWindow):
         self.listView.viewport().installEventFilter(self);
         self.listView.installEventFilter(self)
 
-        self.upTextForegroundColor = QtGui.QColor(255, 0, 0)
-        self.downTextForegroundColor = QtGui.QColor(0, 128, 0)
+        self.upTextForegroundColor = defaults.GetTextUpForegroundColor()
+        self.downTextForegroundColor = defaults.GetTextDownForegroundColor()
         
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.OnTimer)
@@ -86,7 +88,7 @@ class MainForm(QtGui.QMainWindow):
         self.listView.setItemDelegateForColumn(self.chartColumn, ChartItemDelegate(self.listView, self.seriesProvider))
         
         self.LoadSettings()
-        self.LoadAppearanceSettings()
+        self.LoadGeometrySettings()
         self.LoadCountryIcons()
         self.UpdateListView()
         
@@ -445,37 +447,29 @@ class MainForm(QtGui.QMainWindow):
         self.accessKey = str(self.settings.value("access_key", ""))
         self.secretKey = str(self.settings.value("secret_key", ""))
         self.associateTag = str(self.settings.value("associate_tag", ""))
-        self.resize(self.settings.value("mainform_size", QtCore.QSize(640, 200)))
         self.sysNotify = to_bool(self.settings.value("sys_notify", "false"))
         self.lastUpdate = self.settings.value("last_update", QtCore.QDateTime())
+        
+        self.LoadAppearanceSettings()
+
+    def LoadGeometrySettings(self):
+        self.resize(self.settings.value("mainform_size", QtCore.QSize(640, 200)))
 
     def LoadAppearanceSettings(self):
-        def ReadColorValue(key, def_color):
-            """
-            @type def_color: QtGui.QColor
-            """
-            if not self.settings.contains(key):
-                self.settings.setValue(key, def_color.name())
-
-            color = QtGui.QColor(self.settings.value(key, def_color.name()))
-
-            if color.isValid(): return color
-            return def_color
-
         self.settings.beginGroup("Appearance")
 
         delegete = self.listView.itemDelegateForColumn(self.chartColumn)
 
         if delegete:
-            delegete.SetUpLineColor(ReadColorValue("graph_up_line_color", delegete.GetUpLineColor()))
-            delegete.SetUpFillColor(ReadColorValue("graph_up_fill_color", delegete.GetUpFillColor()))
-            delegete.SetDownLineColor(ReadColorValue("graph_down_line_color", delegete.GetDownLineColor()))
-            delegete.SetDownFillColor(ReadColorValue("graph_down_fill_color", delegete.GetDownFillColor()))
-            delegete.SetDefaultLineColor(ReadColorValue("graph_default_line_color", delegete.GetDefaultLineColor()))
-            delegete.SetDefaultFillColor(ReadColorValue("graph_default_fill_color", delegete.GetDefaultFillColor()))
+            delegete.SetUpLineColor(ReadColorValue(self.settings, "graph_up_line_color", defaults.GetDefaultUpLineColor()))
+            delegete.SetUpFillColor(ReadColorValue(self.settings, "graph_up_fill_color", defaults.GetDefaultUpFillColor()))
+            delegete.SetDownLineColor(ReadColorValue(self.settings, "graph_down_line_color", defaults.GetDefaultDownLineColor()))
+            delegete.SetDownFillColor(ReadColorValue(self.settings, "graph_down_fill_color", defaults.GetDefaultDownFillColor()))
+            delegete.SetNeutralLineColor(ReadColorValue(self.settings, "graph_neutral_line_color", defaults.GetDefaultNeutralLineColor()))
+            delegete.SetNeutralFillColor(ReadColorValue(self.settings, "graph_neutral_fill_color", defaults.GetDefaultNeutralFillColor()))
 
-        self.upTextForegroundColor = ReadColorValue("text_up_foreground_color", self.upTextForegroundColor)
-        self.downTextForegroundColor = ReadColorValue("text_down_foreground_color", self.downTextForegroundColor)
+        self.upTextForegroundColor = ReadColorValue(self.settings, "text_up_foreground_color", defaults.GetTextUpForegroundColor())
+        self.downTextForegroundColor = ReadColorValue(self.settings, "text_down_foreground_color", defaults.GetTextDownForegroundColor())
 
         self.settings.endGroup()
         

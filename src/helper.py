@@ -1,4 +1,4 @@
-from PySide import QtCore
+from PySide import QtCore, QtGui
 
 config_dir = None
 debug_mode = False
@@ -22,3 +22,19 @@ def GetDomain(country):
     if country == "ca": return "ca"
     if country == "cn": return "cn"
     return ""
+
+def ReadColorValue(settings, key, def_color):
+    """
+    @type def_color: QtGui.QColor
+    """
+    if not settings.contains(key):
+        settings.setValue(key, def_color.name())
+
+    color = QtGui.QColor(settings.value(key, def_color.name()))
+
+    if color.isValid(): return color
+    return def_color
+
+def to_bool(value):
+    if isinstance(value, unicode): return value.lower() == "true"
+    return bool(value)
