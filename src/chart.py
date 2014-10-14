@@ -9,14 +9,14 @@ class ChartItemDelegate(QtGui.QStyledItemDelegate):
         self.series_provider = provider
         self.parent = parent
 
-        self.neutralLineColor = defaults.GetDefaultNeutralLineColor()
+        self.neutralLineColor = defaults.GetNeutralLineColor()
         self.neutralFillColor = defaults.GetDefaultNeutralFillColor()
 
-        self.upLineColor = defaults.GetDefaultUpLineColor()
-        self.upFillColor = defaults.GetDefaultUpFillColor()
+        self.upLineColor = defaults.GetUpLineColor()
+        self.upFillColor = defaults.GetUpFillColor()
 
-        self.downLineColor = defaults.GetDefaultDownLineColor()
-        self.downFillColor = defaults.GetDefaultDownFillColor()
+        self.downLineColor = defaults.GetDownLineColor()
+        self.downFillColor = defaults.GetDownFillColor()
         
     def paint(self, painter, option, index):
         option_v4 = QtGui.QStyleOptionViewItemV4(option)

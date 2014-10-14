@@ -463,11 +463,11 @@ class MainForm(QtGui.QMainWindow):
         delegete = self.listView.itemDelegateForColumn(self.chartColumn)
 
         if delegete:
-            delegete.SetUpLineColor(ReadColorValue(self.settings, "graph_up_line_color", defaults.GetDefaultUpLineColor()))
-            delegete.SetUpFillColor(ReadColorValue(self.settings, "graph_up_fill_color", defaults.GetDefaultUpFillColor()))
-            delegete.SetDownLineColor(ReadColorValue(self.settings, "graph_down_line_color", defaults.GetDefaultDownLineColor()))
-            delegete.SetDownFillColor(ReadColorValue(self.settings, "graph_down_fill_color", defaults.GetDefaultDownFillColor()))
-            delegete.SetNeutralLineColor(ReadColorValue(self.settings, "graph_neutral_line_color", defaults.GetDefaultNeutralLineColor()))
+            delegete.SetUpLineColor(ReadColorValue(self.settings, "graph_up_line_color", defaults.GetUpLineColor()))
+            delegete.SetUpFillColor(ReadColorValue(self.settings, "graph_up_fill_color", defaults.GetUpFillColor()))
+            delegete.SetDownLineColor(ReadColorValue(self.settings, "graph_down_line_color", defaults.GetDownLineColor()))
+            delegete.SetDownFillColor(ReadColorValue(self.settings, "graph_down_fill_color", defaults.GetDownFillColor()))
+            delegete.SetNeutralLineColor(ReadColorValue(self.settings, "graph_neutral_line_color", defaults.GetNeutralLineColor()))
             delegete.SetNeutralFillColor(ReadColorValue(self.settings, "graph_neutral_fill_color", defaults.GetDefaultNeutralFillColor()))
 
         self.upTextForegroundColor = ReadColorValue(self.settings, "text_up_foreground_color", defaults.GetTextUpForegroundColor())

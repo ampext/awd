@@ -1,18 +1,18 @@
 from PySide import QtGui
 
-def GetDefaultUpLineColor():
+def GetUpLineColor():
     return QtGui.QColor("red")
 
-def GetDefaultUpFillColor():
+def GetUpFillColor():
     return QtGui.QColor("lightPink")
 
-def GetDefaultDownLineColor():
+def GetDownLineColor():
     return QtGui.QColor("darkGreen")
 
-def GetDefaultDownFillColor():
+def GetDownFillColor():
     return QtGui.QColor("lightGreen")
 
-def GetDefaultNeutralLineColor():
+def GetNeutralLineColor():
     return QtGui.QColor("darkGray")
 
 def GetDefaultNeutralFillColor():
