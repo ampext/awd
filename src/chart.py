@@ -125,6 +125,8 @@ class ChartDataProvider():
         self.row2asin[row] = asin
 
     def Update(self):
+        if self.nSamples <= 0: return
+        
         self.series = {}
         items = db_helper.GetAllItems()
 

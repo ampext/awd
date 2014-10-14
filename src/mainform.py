@@ -458,7 +458,7 @@ class MainForm(QtGui.QMainWindow):
     def LoadAppearanceSettings(self):
         self.settings.beginGroup("Appearance")
 
-        self.seriesProvider.SetNumSamples(self.settings.value("graph_n_samples", defaults.GetNumSamples()))
+        self.seriesProvider.SetNumSamples(int(self.settings.value("graph_n_samples", defaults.GetNumSamples())))
 
         delegete = self.listView.itemDelegateForColumn(self.chartColumn)
 
