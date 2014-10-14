@@ -134,6 +134,10 @@ class SettingsForm(QtGui.QDialog):
         layout = QtGui.QVBoxLayout()
         formLayout = QtGui.QFormLayout()
         
+        self.samplesSpin = QtGui.QSpinBox(parent)
+        self.samplesSpin.setRange(5, 100)
+
+
         self.ulcButton = ColorButton(parent)
         self.ufcButton = ColorButton(parent)
         self.dlcButton = ColorButton(parent)
@@ -145,6 +149,8 @@ class SettingsForm(QtGui.QDialog):
         
         self.restoreButton = QtGui.QPushButton(self.tr("Restore defaults"), parent)
         self.restoreButton.clicked.connect(self.OnRestoreDefaults)
+
+        formLayout.addRow(self.tr("Number of preview samples"), self.samplesSpin)
 
         formLayout.addRow(self.tr("Up line color"), self.ulcButton)
         formLayout.addRow(self.tr("Up fill color"), self.ufcButton)
@@ -198,6 +204,7 @@ class SettingsForm(QtGui.QDialog):
         
         self.settings.beginGroup("Appearance")
         
+        self.settings.setValue("graph_n_samples", self.samplesSpin.value())
         self.settings.setValue("graph_up_line_color", self.ulcButton.GetColor().name())
         self.settings.setValue("graph_up_fill_color", self.ufcButton.GetColor().name())
         self.settings.setValue("graph_down_line_color", self.dlcButton.GetColor().name())
@@ -223,6 +230,7 @@ class SettingsForm(QtGui.QDialog):
         
         self.settings.beginGroup("Appearance")
         
+        self.samplesSpin.setValue(int(self.settings.value("graph_n_samples", defaults.GetNumSamples())))
         self.ulcButton.SetColor(ReadColorValue(self.settings, "graph_up_line_color", defaults.GetDefaultUpLineColor()))
         self.ufcButton.SetColor(ReadColorValue(self.settings, "graph_up_fill_color", defaults.GetDefaultUpFillColor()))
         self.dlcButton.SetColor(ReadColorValue(self.settings, "graph_down_line_color", defaults.GetDefaultDownLineColor()))
@@ -242,6 +250,7 @@ class SettingsForm(QtGui.QDialog):
         self.cache.Update()
 
     def OnRestoreDefaults(self):
+        self.samplesSpin.setValue(defaults.GetNumSamples())
         self.ulcButton.SetColor(defaults.GetDefaultUpLineColor())
         self.ufcButton.SetColor(defaults.GetDefaultUpFillColor())
         self.dlcButton.SetColor(defaults.GetDefaultDownLineColor())

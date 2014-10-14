@@ -23,3 +23,6 @@ def GetTextUpForegroundColor():
 
 def GetTextDownForegroundColor():
     return  QtGui.QColor("darkGreen")
+
+def GetNumSamples():
+	return 10

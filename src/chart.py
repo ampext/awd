@@ -77,7 +77,7 @@ class ChartItemDelegate(QtGui.QStyledItemDelegate):
         painter.setPen(color)
         painter.drawPolyline(points)
         painter.restore()
-       
+
     def SetUpLineColor(self, color):
         self.upLineColor = color
 
@@ -119,6 +119,7 @@ class ChartDataProvider():
     def __init__(self):
         self.series = {}
         self.row2asin = {}
+        self.nSamples = defaults.GetNumSamples()
 
     def SetRow2Asin(self, row, asin):
         self.row2asin[row] = asin
@@ -128,10 +129,15 @@ class ChartDataProvider():
         items = db_helper.GetAllItems()
 
         for item in items:
-            self.series[item[1]] = db_helper.GetNLastPriceChanges(item[1], 10)
+            self.series[item[1]] = db_helper.GetNLastPriceChanges(item[1], self.nSamples)
 
     def GetData(self, row_index):
         return self.series[self.row2asin[row_index]]
+
+    def SetNumSamples(self, n):
+        if self.nSamples != n:
+            self.nSamples = n
+            self.Update()
 
     def __call__(self, row_index):
         return self.GetData(row_index)
