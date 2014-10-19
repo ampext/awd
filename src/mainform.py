@@ -73,7 +73,7 @@ class MainForm(QtGui.QMainWindow):
         self.setCentralWidget(self.listView)
         self.resize(640, 200);
         self.setWindowTitle(self.tr("Amazon Watch Dog"))
-        self.setWindowIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "tray.png"))
+        self.setWindowIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "awd.svg"))
         
         self.timer.setInterval(60000 * 20)
         self.hideAfterStart = True
@@ -141,7 +141,7 @@ class MainForm(QtGui.QMainWindow):
         self.trayMenu.addAction(self.quitAction)
         
         self.tray.setContextMenu(self.trayMenu)
-        self.tray.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "tray.png"))
+        self.tray.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "tray.svg"))
         self.tray.activated.connect(self.OnTrayActivated)
         
     def CreateActions(self):

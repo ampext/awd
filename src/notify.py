@@ -3,7 +3,7 @@ import os
 
 def Notify(text, parent, use_system):
     if use_system:
-        cmd = "notify-send --icon=\"{0}\" --app-name=\"{1}\" \"{2}\"".format(os.path.abspath(os.path.dirname(__file__)) + QtCore.QDir.separator() + "images" + QtCore.QDir.separator() + "tray.png", "Amazon Watch Dog", text)
+        cmd = "notify-send --icon=\"{0}\" --app-name=\"{1}\" \"{2}\"".format(os.path.abspath(os.path.dirname(__file__)) + QtCore.QDir.separator() + "images" + QtCore.QDir.separator() + "awd.png", "Amazon Watch Dog", text)
         os.system(cmd)
     else:
         tip = NotificationTip(parent, text)
