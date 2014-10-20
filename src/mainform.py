@@ -141,7 +141,7 @@ class MainForm(QtGui.QMainWindow):
         self.trayMenu.addAction(self.quitAction)
         
         self.tray.setContextMenu(self.trayMenu)
-        self.tray.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() + "tray.svg"))
+        self.tray.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() +  defaults.GetTrayIconName()))
         self.tray.activated.connect(self.OnTrayActivated)
         
     def CreateActions(self):
@@ -472,6 +472,8 @@ class MainForm(QtGui.QMainWindow):
 
         self.upTextForegroundColor = ReadColorValue(self.settings, "text_up_foreground_color", defaults.GetTextUpForegroundColor())
         self.downTextForegroundColor = ReadColorValue(self.settings, "text_down_foreground_color", defaults.GetTextDownForegroundColor())
+
+        if self.tray: self.tray.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() +  self.settings.value("tray_icon", defaults.GetTrayIconName())))
 
         self.settings.endGroup()
         
