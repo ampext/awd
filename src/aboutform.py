@@ -12,7 +12,7 @@ class AboutForm(QtGui.QDialog):
         frame = QtGui.QFrame(self)
         frame.setAutoFillBackground(True)
         frame.setFrameShape(QtGui.QFrame.StyledPanel)
-        frame.setFrameShadow(QtGui.QFrame.Raised)
+        frame.setFrameShadow(QtGui.QFrame.Sunken)
 
         horizontalLayout = QtGui.QHBoxLayout(frame)
 
