@@ -14,11 +14,10 @@
    height="24"
    id="svg2985"
    version="1.1"
-   inkscape:version="0.48.4 r9939"
-   sodipodi:docname="awd.svg"
-   inkscape:export-filename="/home/artem/Dropbox/Sources/awd/src/images/awd.png"
    inkscape:export-xdpi="240"
-   inkscape:export-ydpi="240">
+   inkscape:export-ydpi="240"
+   inkscape:version="0.48.5 r10040"
+   sodipodi:docname="awd.svg">
   <defs
      id="defs2987">
     <linearGradient
@@ -44,17 +43,6 @@
          id="stop3849" />
     </linearGradient>
     <linearGradient
-       id="linearGradient3794">
-      <stop
-         style="stop-color:#c0c0c0;stop-opacity:1;"
-         offset="0"
-         id="stop3796" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="1"
-         id="stop3798" />
-    </linearGradient>
-    <linearGradient
        inkscape:collect="always"
        xlink:href="#linearGradient3845"
        id="linearGradient3859"
@@ -67,15 +55,6 @@
        inkscape:collect="always"
        xlink:href="#linearGradient3845"
        id="linearGradient3883"
-       x1="9.9679356"
-       y1="63.001247"
-       x2="10.032936"
-       y2="41.282497"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3845-8"
-       id="linearGradient3883-1"
        x1="9.9679356"
        y1="63.001247"
        x2="10.032936"
@@ -96,15 +75,6 @@
        inkscape:collect="always"
        xlink:href="#linearGradient3845-8"
        id="linearGradient3933"
-       x1="11.000548"
-       y1="63.261932"
-       x2="11.030311"
-       y2="41.032261"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3845-8-0"
-       id="linearGradient3933-6"
        x1="11.000548"
        y1="63.261932"
        x2="11.030311"
@@ -148,17 +118,17 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="16"
-     inkscape:cx="8.1875"
+     inkscape:cx="-1.5"
      inkscape:cy="9.2341721"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:document-units="px"
      inkscape:grid-bbox="true"
-     inkscape:window-width="1858"
-     inkscape:window-height="1060"
-     inkscape:window-x="60"
-     inkscape:window-y="-3"
-     inkscape:window-maximized="1"
+     inkscape:window-width="748"
+     inkscape:window-height="674"
+     inkscape:window-x="478"
+     inkscape:window-y="309"
+     inkscape:window-maximized="0"
      inkscape:snap-global="true"
      inkscape:snap-grids="false"
      inkscape:snap-page="true"

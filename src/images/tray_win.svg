@@ -7,101 +7,18 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="24"
    height="24"
    id="svg2985"
    version="1.1"
-   inkscape:version="0.91pre2 r13516"
-   sodipodi:docname="tray_win.svg"
-   inkscape:export-filename="C:\Users\Artem\Dropbox\Sources\awd\src\images\tray_win.png"
    inkscape:export-xdpi="90"
-   inkscape:export-ydpi="90">
+   inkscape:export-ydpi="90"
+   inkscape:version="0.48.5 r10040"
+   sodipodi:docname="tray_win.svg">
   <defs
-     id="defs2987">
-    <inkscape:perspective
-       sodipodi:type="inkscape:persp3d"
-       inkscape:vp_x="0 : 12 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_z="24 : 12 : 1"
-       inkscape:persp3d-origin="12 : 8 : 1"
-       id="perspective4165" />
-    <linearGradient
-       id="linearGradient4059">
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="0"
-         id="stop4061" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:0;"
-         offset="1"
-         id="stop4063" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient3845">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop3847" />
-      <stop
-         style="stop-color:#000000;stop-opacity:0.58823532;"
-         offset="1"
-         id="stop3849" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient3794">
-      <stop
-         style="stop-color:#c0c0c0;stop-opacity:1;"
-         offset="0"
-         id="stop3796" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="1"
-         id="stop3798" />
-    </linearGradient>
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3845-8"
-       id="linearGradient3883-1"
-       x1="9.9679356"
-       y1="63.001247"
-       x2="10.032936"
-       y2="41.282497"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       id="linearGradient3845-8">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop3847-4" />
-      <stop
-         style="stop-color:#000000;stop-opacity:0.58823532;"
-         offset="1"
-         id="stop3849-3" />
-    </linearGradient>
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3845-8-0"
-       id="linearGradient3933-6"
-       x1="11.000548"
-       y1="63.261932"
-       x2="11.030311"
-       y2="41.032261"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       id="linearGradient3845-8-0">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop3847-4-8" />
-      <stop
-         style="stop-color:#000000;stop-opacity:0.58823532;"
-         offset="1"
-         id="stop3849-3-5" />
-    </linearGradient>
-  </defs>
+     id="defs2987" />
   <sodipodi:namedview
      id="base"
      pagecolor="#ffffff"
@@ -116,11 +33,11 @@
      showgrid="true"
      inkscape:document-units="px"
      inkscape:grid-bbox="true"
-     inkscape:window-width="1857"
-     inkscape:window-height="1058"
-     inkscape:window-x="55"
-     inkscape:window-y="-8"
-     inkscape:window-maximized="1"
+     inkscape:window-width="537"
+     inkscape:window-height="414"
+     inkscape:window-x="416"
+     inkscape:window-y="376"
+     inkscape:window-maximized="0"
      inkscape:snap-global="true"
      inkscape:snap-grids="false"
      inkscape:snap-page="false"
