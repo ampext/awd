@@ -89,7 +89,7 @@ class ItemModel(QtCore.QAbstractItemModel):
             self.rootItem.appendChild(item)
             
         if helper.debug_mode:
-            print("Items model is updated ({0} items)".format(self.rootItem.childCount()))
+            print("model updated: {0} item(s)".format(self.rootItem.childCount()))
             
         self.endResetModel()
             
