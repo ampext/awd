@@ -397,6 +397,9 @@ class MainForm(QtGui.QMainWindow):
         self.settings.beginGroup("Appearance")
 
         self.itemModel.SetNumSamples(int(self.settings.value("graph_n_samples", defaults.GetNumSamples())))
+        self.itemModel.SetUpTextForegroundColor(ReadColorValue(self.settings, "text_up_foreground_color", defaults.GetTextUpForegroundColor()))
+        self.itemModel.SetDownTextForegroundColor(ReadColorValue(self.settings, "text_down_foreground_color", defaults.GetTextDownForegroundColor()))
+        self.itemModel.update()
 
         delegete = self.listView.itemDelegateForColumn(self.itemModel.chartColumn())
 
@@ -407,9 +410,6 @@ class MainForm(QtGui.QMainWindow):
             delegete.SetDownFillColor(ReadColorValue(self.settings, "graph_down_fill_color", defaults.GetDownFillColor()))
             delegete.SetNeutralLineColor(ReadColorValue(self.settings, "graph_neutral_line_color", defaults.GetNeutralLineColor()))
             delegete.SetNeutralFillColor(ReadColorValue(self.settings, "graph_neutral_fill_color", defaults.GetDefaultNeutralFillColor()))
-
-        self.upTextForegroundColor = ReadColorValue(self.settings, "text_up_foreground_color", defaults.GetTextUpForegroundColor())
-        self.downTextForegroundColor = ReadColorValue(self.settings, "text_down_foreground_color", defaults.GetTextDownForegroundColor())
 
         if self.tray: self.tray.setIcon(QtGui.QIcon("images" + QtCore.QDir.separator() +  self.settings.value("tray_icon", defaults.GetTrayIconName())))
 

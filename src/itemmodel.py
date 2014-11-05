@@ -96,7 +96,17 @@ class ItemModel(QtCore.QAbstractItemModel):
     def SetNumSamples(self, n):
         if self.nSamples != n:
             self.nSamples = n
-            self.update()
+            #self.update()
+            
+    def SetUpTextForegroundColor(self, color):
+        if self.upTextForegroundColor != color:
+            self.upTextForegroundColor = color
+            #self.update()
+            
+    def SetDownTextForegroundColor(self, color):
+        if self.downTextForegroundColor != color:
+            self.downTextForegroundColor = color
+            #self.update()
         
     def headerData(self, section, orientation, role):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
