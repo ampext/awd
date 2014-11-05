@@ -1,12 +1,14 @@
 from PySide import QtGui, QtCore
 from aws import GetAttributes, AWSError
 from worker import WorkerThread, TaskResult
+from helper import GetAmazonCountries, countryIcons
+
 import threading
-import db_helper
+import db
 import time
 
 class ItemForm(QtGui.QDialog): 
-    def __init__(self, parent, icons, accessKey, secretKey, associateTag, asin = ""):
+    def __init__(self, parent, accessKey, secretKey, associateTag, asin = ""):
         QtGui.QDialog.__init__(self, parent)
 
         self.editMode = not not asin
@@ -63,8 +65,8 @@ class ItemForm(QtGui.QDialog):
         layout.addLayout(formLayout)
         layout.addLayout(btnLayout)
         
-        for country in db_helper.GetAmazonCountries():
-            if icons.has_key(country): self.comboBox.addItem(icons[country], country)
+        for country in GetAmazonCountries():
+            if countryIcons.has_key(country): self.comboBox.addItem(countryIcons[country], country)
             else: self.comboBox.addItem(country)
 
         self.EnableControls()
@@ -73,7 +75,7 @@ class ItemForm(QtGui.QDialog):
         self.setResult(QtGui.QDialog.Rejected)
         
     def LoadItem(self, asin):  
-        lac = db_helper.GetItemLabelAndCountry(asin)   
+        lac = db.GetItemLabelAndCountry(asin)   
         self.asinEdit.setText(asin)
         self.labelEdit.setText(lac[0])
         self.comboBox.setCurrentIndex(self.comboBox.findText(lac[1]))
@@ -87,11 +89,11 @@ class ItemForm(QtGui.QDialog):
             QtGui.QMessageBox.information(self, self.tr("Validation"), self.tr("Label is empty!"))
             return
 
-        if db_helper.CheckASIN(self.asinEdit.text()): 
+        if db.CheckASIN(self.asinEdit.text()): 
             QtGui.QMessageBox.information(self, self.tr("Validation"), self.tr("Cannot add new item because item with same ASIN already exists!"))
             return
 
-        db_helper.AddItem(self.asinEdit.text(), self.labelEdit.text(), self.comboBox.currentText())
+        db.AddItem(self.asinEdit.text(), self.labelEdit.text(), self.comboBox.currentText())
         
         self.accept()
     
@@ -100,7 +102,7 @@ class ItemForm(QtGui.QDialog):
             QtGui.QMessageBox.information(self, self.tr("Validation"), self.tr("Label is empty!"))
             return
         
-        db_helper.EditItemLabel(self.asinEdit.text(), self.labelEdit.text())
+        db.EditItemLabel(self.asinEdit.text(), self.labelEdit.text())
         
         self.accept()
 

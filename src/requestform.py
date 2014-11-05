@@ -1,6 +1,6 @@
 from PySide import QtGui, QtCore, QtXml
 from aws import FillParams, CreateRESTRequest, CreateRESTSignature, RESTRequest
-import db_helper
+import db
 import httplib
 
 class RequestForm(QtGui.QDialog):
@@ -28,7 +28,7 @@ class RequestForm(QtGui.QDialog):
         self.wwCheck = QtGui.QCheckBox(self.tr("Dynamic Word Wrap"))
         self.wwCheck.stateChanged.connect(self.OnWordWrap)
 
-        for country in db_helper.GetAmazonCountries():
+        for country in db.GetAmazonCountries():
             if icons.has_key(country): self.comboBox.addItem(icons[country], country)
             else: self.comboBox.addItem(country)
 

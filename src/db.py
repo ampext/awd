@@ -1,8 +1,6 @@
 from PySide import QtCore, QtGui, QtSql
 from datetime import datetime
 from aws import AWSError, GetPrice
-import sys
-import os
 import helper
 import locale
 
@@ -159,48 +157,17 @@ def GetItemCountry(asin):
     
     return query.record().field("country").value()
 
-def GetAmazonCountries():
-    return ["us", "uk", "de", "fr", "jp", "ca", "cn"]
-
-def GetLocaleName(country):
-    if country == "us": 
-        if os.name == "nt": return "us_US"
-        else: return "en_US"
-        
-    if country == "uk": 
-        if os.name == "nt": return "eng_UK"
-        else: return "en_GB"
-    
-    if country == "de": 
-        if os.name == "nt": return "deu_deu"
-        else: return "de_DE"
-    
-    if country == "fr": 
-        if os.name == "nt": return "fr-FR"
-        else: return "fr_FR"
-    
-    if country == "jp": 
-        if os.name == "nt": return "ja-JP"
-        else: return "ja_JP"
-    
-    if country == "ca": 
-        if os.name == "nt": return "fr-CA"
-        else: return "fr_CA"
-    
-    if country == "cn": 
-        if os.name == "nt": return "zh-TW"
-        else: return "zh_TW"
-    
-    return ""
-
 def FormatPrice(price, country):
+    if price <= 0: return "n/a"
+    
     loc = locale.getlocale()
+    
     try:
-        locale.setlocale(locale.LC_ALL, GetLocaleName(country))
+        locale.setlocale(locale.LC_ALL, helper.GetLocaleName(country))
         price = locale.currency(price / 100.0)
     except:
         price = str(price / 100.0)
-        print("WARNING: can not set locale with name " + GetLocaleName(country))
+        print("WARNING: can not set locale with name " + helper.GetLocaleName(country))
     finally:
         locale.setlocale(locale.LC_ALL, loc)
 

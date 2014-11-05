@@ -5,7 +5,7 @@ from mainform import MainForm
 from argparse import ArgumentParser
 
 import sys
-import db_helper
+import db
 import helper
 
 parser = ArgumentParser()
@@ -25,7 +25,8 @@ if not QtGui.QSystemTrayIcon.isSystemTrayAvailable():
 
 QtGui.qApp.setQuitOnLastWindowClosed(False)
 
-db_helper.SetupDatabase()
+helper.InitCountryIcons()
+db.SetupDatabase()
 
 form = MainForm()
 

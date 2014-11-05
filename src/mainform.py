@@ -1,4 +1,4 @@
-from PySide import QtGui, QtCore, QtSql
+from PySide import QtGui, QtCore
 from itemform import ItemForm
 from settingsform import SettingsForm
 from requestform import RequestForm
@@ -6,14 +6,15 @@ from aboutform import AboutForm
 from waitwidget import WaitWidget
 from tooltip import ImageToolTip
 from worker import WorkerThread, TaskResult
-from chart import ChartItemDelegate, ChartDataProvider
+from chart import ChartItemDelegate
 from imagecache import ImageCache
+from itemmodel import ItemModel
 from aws import GetAttributes, GetImageUrls, AWSError
 from helper import ReadColorValue, to_bool
 
-import db_helper
-import helper
+import db
 import defaults
+import helper
 import notify
 import urllib2
 
@@ -28,33 +29,30 @@ class MainForm(QtGui.QMainWindow):
 
         self.removeAction.setEnabled(False)
         self.editAction.setEnabled(False)
-
-        headers = [self.tr(""), self.tr("ASIN"), self.tr("Label"), self.tr("Price"), self.tr("Last"), self.tr("Min"), self.tr("Max"), self.tr("Chart")]
         
-        self.listView = QtGui.QTreeWidget(self)
-        self.listView.setHeaderLabels(headers)
+        self.itemModel = ItemModel()
+        self.itemSelectionModel = QtGui.QItemSelectionModel(self.itemModel)
+        
+        self.listView = QtGui.QTreeView(self)
+        self.listView.setModel(self.itemModel)
+        self.listView.setSelectionModel(self.itemSelectionModel)
+        
         self.listView.setRootIsDecorated(False)
         self.listView.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        self.listView.setColumnWidth(self.itemModel.countryColumn(), 20)
+        self.listView.setColumnWidth(self.itemModel.asinColumn(), 100)
+        self.listView.setColumnWidth(self.itemModel.labelColumn(), 210)
+        self.listView.setColumnWidth(self.itemModel.priceColumn(), 70)
+        self.listView.setColumnWidth(self.itemModel.priceLastColumn(), 70)
+        self.listView.setColumnWidth(self.itemModel.priceMinColumn(), 70)
+        self.listView.setColumnWidth(self.itemModel.priceMaxColumn(), 70)
+        self.listView.setColumnWidth(self.itemModel.chartColumn(), 30)            
 
-        self.countryColumn, self.asinColumn, self.labelColumn, self.priceColumn, self.lastColumn, self.minColumn, self.maxColumn, self.chartColumn = range(0, 8)
-        
-        self.listView.setColumnWidth(self.countryColumn, 20)
-        self.listView.setColumnWidth(self.asinColumn, 100)
-        self.listView.setColumnWidth(self.labelColumn, 210)
-        self.listView.setColumnWidth(self.priceColumn, 70)
-        self.listView.setColumnWidth(self.lastColumn, 70)
-        self.listView.setColumnWidth(self.minColumn, 70)
-        self.listView.setColumnWidth(self.maxColumn, 70)
-        self.listView.setColumnWidth(self.chartColumn, 30)
-
-        self.listView.itemSelectionChanged.connect(self.OnItemSelectionChanged)
+        self.itemSelectionModel.selectionChanged.connect(self.OnItemSelectionChanged)
         
         self.listView.viewport().setMouseTracking(True)
         self.listView.viewport().installEventFilter(self);
         self.listView.installEventFilter(self)
-
-        self.upTextForegroundColor = defaults.GetTextUpForegroundColor()
-        self.downTextForegroundColor = defaults.GetTextDownForegroundColor()
         
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.OnTimer)
@@ -80,16 +78,12 @@ class MainForm(QtGui.QMainWindow):
         self.showNotifications = True
         self.settings = QtCore.QSettings(helper.GetConfigDir() + QtCore.QDir.separator() + helper.GetConfigName(), QtCore.QSettings.IniFormat, self)
         
-        self.seriesProvider = ChartDataProvider()
-        self.seriesProvider.Update()
-        
         self.imageCache = ImageCache(helper.GetConfigDir() + QtCore.QDir.separator() + "cache")
 
-        self.listView.setItemDelegateForColumn(self.chartColumn, ChartItemDelegate(self.listView, self.seriesProvider))
+        self.listView.setItemDelegateForColumn(self.itemModel.chartColumn(), ChartItemDelegate(self.listView))
         
         self.LoadSettings()
         self.LoadGeometrySettings()
-        self.LoadCountryIcons()
         self.UpdateListView()
         
         if self.hideAfterStart: self.hide()
@@ -248,7 +242,8 @@ class MainForm(QtGui.QMainWindow):
             menu.exec_(event.globalPos())
             
     def OnListViewMouseMoveEvent(self, event):
-        item = self.listView.itemAt(event.pos())
+        index = self.listView.indexAt(event.pos())
+        item = self.itemModel.item(index)
 
         if item is None:
             self.tooltipItem = None
@@ -265,7 +260,8 @@ class MainForm(QtGui.QMainWindow):
     def OnListViewToolTipEvent(self, event):
         if self.tooltip.isVisible(): return
 
-        self.tooltipItem = self.listView.itemAt(event.pos())
+        index = self.listView.indexAt(event.pos())
+        self.tooltipItem = self.itemModel.item(index)
         
         if self.tooltipItem is None:
             self.tooltip.hideTip()
@@ -274,90 +270,32 @@ class MainForm(QtGui.QMainWindow):
             self.FetchImage()
 
     def GetSelectedASINs(self):
-        items = self.listView.selectedItems()
+        selected = self.itemSelectionModel.selectedRows()
+        asins = map(lambda index: self.itemModel.asin(index), selected)
         
-        if not items: return []
-        return list(map(lambda item : item.text(self.asinColumn), items))
+        return asins
 
-    def LoadCountryIcons(self):
-        self.icons = {}
+    def UpdateListView(self):       
+        self.itemModel.update()
+
+    def OnItemSelectionChanged(self, selected, deselected):
+        selectedRows = self.itemSelectionModel.selectedRows()
         
-        for country in db_helper.GetAmazonCountries():
-            self.icons[country] = QtGui.QIcon("images" + QtCore.QDir.separator() + country + ".png")            
-
-    def GetCountryIcon(self, country):
-        if self.icons.has_key(country): return self.icons[country]
-        return None
-
-    def UpdateListView(self):
-        query = QtSql.QSqlQuery()
-        query.exec_("SELECT * FROM main")
-        
-        self.seriesProvider.Update()
-
-        self.listView.clear()
-        cntr = 0
-        
-        while query.next():
-            record = query.record()
-            item = QtGui.QTreeWidgetItem()
-            
-            asin = record.field("asin").value()
-            price = int(record.field("price").value())
-            min = int(record.field("min").value())
-            max = int(record.field("max").value())
-            last = int(record.field("last").value())
-            country = record.field("country").value()
-            icon = self.GetCountryIcon(country)
-            
-            item.setData(self.countryColumn, QtCore.Qt.UserRole, db_helper.GetAmazonCountries().index(country))
-            
-            if icon != None: item.setIcon(self.countryColumn, icon)
-            item.setText(self.asinColumn, asin)
-            item.setText(self.labelColumn, record.field("label").value())
-            
-            if price <= 0: item.setText(self.priceColumn, "n/a") 
-            else: item.setText(self.priceColumn, db_helper.FormatPrice(price, country))
-            
-            if last <= 0: item.setText(self.lastColumn, "n/a")
-            else: item.setText(self.lastColumn, db_helper.FormatPrice(last, country))
-            
-            if min <= 0: item.setText(self.minColumn, "n/a") 
-            else: item.setText(self.minColumn, db_helper.FormatPrice(min, country))
-            
-            if max <= 0: item.setText(self.maxColumn, "n/a")
-            else: item.setText(self.maxColumn, db_helper.FormatPrice(max, country))
-            
-            if last > price and price != 0 and last != 0:
-                item.setForeground(self.priceColumn, self.downTextForegroundColor)
-                item.setForeground(self.lastColumn, self.downTextForegroundColor)
-            if last < price and price != 0 and last != 0: 
-                item.setForeground(self.priceColumn, self.upTextForegroundColor)
-                item.setForeground(self.lastColumn, self.upTextForegroundColor)
-            
-
-            self.seriesProvider.SetRow2Asin(cntr, asin)
-            cntr = cntr + 1
-
-            self.listView.addTopLevelItem(item)
-
-    def OnItemSelectionChanged(self):
-        enable_removing = len(self.listView.selectedItems()) > 0
-        enable_editing = len(self.listView.selectedItems()) == 1
+        enable_removing = len(selectedRows) > 0
+        enable_editing = len(selectedRows) == 1
         
         self.removeAction.setEnabled(enable_removing)
         self.editAction.setEnabled(enable_editing)
     
     def OnAddItem(self):
-        form = ItemForm(self, self.icons, self.accessKey, self.secretKey, self.associateTag)
-        if form.exec_() == QtGui.QDialog.Accepted:
-            self.UpdateListView()
+        form = ItemForm(self, self.accessKey, self.secretKey, self.associateTag)
+        if form.exec_() == QtGui.QDialog.Accepted: self.UpdateListView()
         
     def OnEditItem(self):
         asins = self.GetSelectedASINs()
         if len(asins) > 1: return
         
-        form = ItemForm(self, self.icons, self.accessKey, self.secretKey, self.associateTag, asins[0])
+        form = ItemForm(self, self.accessKey, self.secretKey, self.associateTag, asins[0])
         if form.exec_() == QtGui.QDialog.Accepted: self.UpdateListView()
         
     def OnRemoveItem(self):
@@ -365,7 +303,7 @@ class MainForm(QtGui.QMainWindow):
         QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.No) == QtGui.QMessageBox.No: return
         
         for asin in self.GetSelectedASINs():
-            db_helper.DeleteItem(asin)
+            db.DeleteItem(asin)
         
         self.UpdateListView()
         
@@ -390,7 +328,7 @@ class MainForm(QtGui.QMainWindow):
         self.updateThread.start()
 
     def OnUpdateItemsTask(self, abort):
-        result = db_helper.UpdateDatabase(self.accessKey, self.secretKey, self.associateTag)
+        result = db.UpdateDatabase(self.accessKey, self.secretKey, self.associateTag)
         return TaskResult(result, 0, "")
         
     def OnUpdateItemsTaskFinished(self, result):
@@ -401,15 +339,15 @@ class MainForm(QtGui.QMainWindow):
         self.addAction.setEnabled(True)
         self.removeAction.setEnabled(True)
         self.editAction.setEnabled(True)
-        self.OnItemSelectionChanged()
+        self.OnItemSelectionChanged(self.itemSelectionModel.selection(), QtGui.QItemSelection())
         
         if result.error != 0:
             QtGui.QMessageBox.information(self, self.tr("Fetching error"), result.message)
             return
 
-        self.DoUpdateItems(result.result[0], result.result[1], result.result[2], result.result[3])
+        self.UpdateItems(result.result[0], result.result[1], result.result[2], result.result[3])
         
-    def DoUpdateItems(self, cntr, up, down, error):
+    def UpdateItems(self, cntr, up, down, error):
         if error != "" and cntr == 0:
             notify.Notify(error, self, self.sysNotify)
             print(error)
@@ -433,13 +371,13 @@ class MainForm(QtGui.QMainWindow):
         if form.exec_() == QtGui.QDialog.Accepted: self.LoadSettings()
         
     def OnBuildRequest(self):
-        form = RequestForm(self, self.icons, self.accessKey, self.secretKey, self.associateTag)
+        form = RequestForm(self, self.countryIcons, self.accessKey, self.secretKey, self.associateTag)
         form.exec_()
         
     def SaveSettings(self):
         self.settings.setValue("mainform_size", self.size())
         self.settings.sync()
-            
+
     def LoadSettings(self):
         self.timer.setInterval(60000 * int(self.settings.value("interval", 20)))
         self.hideAfterStart = to_bool(self.settings.value("hide", "true"))
@@ -458,9 +396,9 @@ class MainForm(QtGui.QMainWindow):
     def LoadAppearanceSettings(self):
         self.settings.beginGroup("Appearance")
 
-        self.seriesProvider.SetNumSamples(int(self.settings.value("graph_n_samples", defaults.GetNumSamples())))
+        self.itemModel.SetNumSamples(int(self.settings.value("graph_n_samples", defaults.GetNumSamples())))
 
-        delegete = self.listView.itemDelegateForColumn(self.chartColumn)
+        delegete = self.listView.itemDelegateForColumn(self.itemModel.chartColumn())
 
         if delegete:
             delegete.SetUpLineColor(ReadColorValue(self.settings, "graph_up_line_color", defaults.GetUpLineColor()))
@@ -482,7 +420,7 @@ class MainForm(QtGui.QMainWindow):
         clipboard.setText(asin)
         
     def OnOpenURL(self, asin):
-        country = db_helper.GetItemCountry(asin)    
+        country = db.GetItemCountry(asin)    
         domain = helper.GetDomain(country)
         
         if not domain or not asin: return
@@ -492,7 +430,7 @@ class MainForm(QtGui.QMainWindow):
         
     def OnGetAttributes(self, asin):
         try:
-            country = db_helper.GetItemCountry(asin)
+            country = db.GetItemCountry(asin)
             attrs = GetAttributes(asin, country, self.accessKey, self.secretKey, self.associateTag)
             print(attrs)
             
@@ -501,7 +439,7 @@ class MainForm(QtGui.QMainWindow):
             
     def OnGetImages(self, asin):
         try:
-            country = db_helper.GetItemCountry(asin)
+            country = db.GetItemCountry(asin)
             images = GetImageUrls(asin, country, self.accessKey, self.secretKey, self.associateTag)
             print(images)
             
@@ -516,7 +454,7 @@ class MainForm(QtGui.QMainWindow):
         
     def FetchImage(self):
         if self.tooltipItem is None: return
-        asin = self.tooltipItem.text(self.asinColumn)
+        asin = self.tooltipItem.asin
         
         if self.fetchThread.isRunning():
             self.fetchThread.requestInterruption()
@@ -534,7 +472,7 @@ class MainForm(QtGui.QMainWindow):
             self.OnFetchImageTaskFinished(TaskResult(image, 1, ""))
 
     def OnFetchImageTask(self, asin, abort):
-        country = db_helper.GetItemCountry(asin)
+        country = db.GetItemCountry(asin)
         urls = GetImageUrls(asin, country, self.accessKey, self.secretKey, self.associateTag)
         
         if not asin in urls: return TaskResult(None, 1, "can not find image URLs for asin {0}".format(asin))

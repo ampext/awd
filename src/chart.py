@@ -1,12 +1,11 @@
 from PySide import QtGui, QtCore
-import db_helper
+import db
 import defaults
 
 class ChartItemDelegate(QtGui.QStyledItemDelegate):
-    def __init__(self, parent, provider):
+    def __init__(self, parent):
         QtGui.QStyledItemDelegate.__init__(self, parent)
 
-        self.series_provider = provider
         self.parent = parent
 
         self.neutralLineColor = defaults.GetNeutralLineColor()
@@ -29,9 +28,11 @@ class ChartItemDelegate(QtGui.QStyledItemDelegate):
         #QtGui.QStyledItemDelegate.paint(self, painter, option_v4, index)
         self.parent.style().drawControl(QtGui.QStyle.CE_ItemViewItem, option_v4, painter, self.parent)
         
-        values = self.series_provider(index.row())
+        if not index.isValid() or index.column() != index.model().chartColumn(): return
+        
+        values = index.model().data(index, QtCore.Qt.DisplayRole)
 
-        if len(values) == 0: return
+        if not values or len(values) == 0: return
         
         max_y = max(values)
         min_y = min(values)
@@ -113,33 +114,3 @@ class ChartItemDelegate(QtGui.QStyledItemDelegate):
 
     def GetNeutralFillColor(self):
         return self.neutralFillColor
-
-
-class ChartDataProvider(): 
-    def __init__(self):
-        self.series = {}
-        self.row2asin = {}
-        self.nSamples = defaults.GetNumSamples()
-
-    def SetRow2Asin(self, row, asin):
-        self.row2asin[row] = asin
-
-    def Update(self):
-        if self.nSamples <= 0: return
-        
-        self.series = {}
-        items = db_helper.GetAllItems()
-
-        for item in items:
-            self.series[item[1]] = db_helper.GetNLastPriceChanges(item[1], self.nSamples)
-
-    def GetData(self, row_index):
-        return self.series[self.row2asin[row_index]]
-
-    def SetNumSamples(self, n):
-        if self.nSamples != n:
-            self.nSamples = n
-            self.Update()
-
-    def __call__(self, row_index):
-        return self.GetData(row_index)
