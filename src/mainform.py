@@ -371,7 +371,7 @@ class MainForm(QtGui.QMainWindow):
         if form.exec_() == QtGui.QDialog.Accepted: self.LoadSettings()
         
     def OnBuildRequest(self):
-        form = RequestForm(self, self.countryIcons, self.accessKey, self.secretKey, self.associateTag)
+        form = RequestForm(self, self.accessKey, self.secretKey, self.associateTag)
         form.exec_()
         
     def SaveSettings(self):
