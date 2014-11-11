@@ -47,17 +47,25 @@ class ImageCache():
     def Check(self, key):
         return key in self.mapping
     
-    def Put(self, key, image):
-        if self.Check(key): return False
-        if image.isNull(): return False 
+    def Put(self, key, image_data, mime_type):       
+        if self.Check(key): return None
+        
+        image = QtGui.QImage.fromData(image_data)
+
+        if image.isNull():
+            print("broken image (size : {0}, mimetype: {1})".format(len(image_data), mime_type))
+            return None 
     
         image_path = self.CreateImagePathForKey(key)
         self.mapping[key] = image_path
+        
+        image_file = QtCore.QFile(image_path)
+        image_file.writeData(image_data, len(image_data))
            
         res =  image.save(image_path)
         self.Touch(key)
         
-        return res
+        return image
     
     def Get(self, key):
         if not self.Check(key): return None

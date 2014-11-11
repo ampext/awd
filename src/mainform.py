@@ -482,23 +482,20 @@ class MainForm(QtGui.QMainWindow):
         if not medium_image_url: return TaskResult(None, 1, "no \"Medium\" image URL for asin {0}".format(asin))
         
         try:
-            request = urllib2.urlopen(medium_image_url, timeout=10)
-            if request.getcode() != 200: return TaskResult(None, 1, "server returns {0} code for {1}".format(request.getcode(), medium_image_url))
-        
-            image = QtGui.QImage.fromData(request.read())
-            
-            if image.isNull(): return  TaskResult(None, 1, "server returns broken image (size : {0}, mimetype: {1})".format(0, request.getinfo().gettype()))
-            else:
-                res = self.imageCache.Put(asin, image)
+            f = urllib2.urlopen(medium_image_url, timeout=10)
+            if f.getcode() != 200: return TaskResult(None, 1, "server returns {0} code for {1}".format(f.getcode(), medium_image_url))
                 
-                if helper.debug_mode:            
-                    if res: print("cached image for asin {0}".format(asin))
-                    else: print("caching image for asin {0} failed".format(asin))
-                    
-                return TaskResult(image, 1, "")
+            image = self.imageCache.Put(asin, f.read(), f.info().gettype())
+
+            if helper.debug_mode:            
+                if image: print("cached image for asin {0}".format(asin))
+                else: print("caching image for asin {0} failed".format(asin))
+
+            if image: return TaskResult(image, 1, "")
+            else: return TaskResult(None, 1, "failed to cache image")
             
         except Exception:
-            return TaskResult(None, 1, "can retrive image from {0}".format(medium_image_url))
+            return TaskResult(None, 1, "can not retrive image from {0}".format(medium_image_url))
 
         return TaskResult(None, 1, "")
         
