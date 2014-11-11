@@ -57,12 +57,17 @@ class ImageCache():
             return None 
     
         image_path = self.CreateImagePathForKey(key)
-        self.mapping[key] = image_path
         
-        image_file = QtCore.QFile(image_path)
-        image_file.writeData(image_data, len(image_data))
-           
-        res =  image.save(image_path)
+        try:
+            image_file = open(image_path, "wb+")
+            image_file.write(image_data)
+            image_file.close()
+            
+        except IOError:
+            print("failed to save image on disk")
+            return None
+        
+        self.mapping[key] = image_path
         self.Touch(key)
         
         return image

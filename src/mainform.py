@@ -473,7 +473,13 @@ class MainForm(QtGui.QMainWindow):
 
     def OnFetchImageTask(self, asin, abort):
         country = db.GetItemCountry(asin)
-        urls = GetImageUrls(asin, country, self.accessKey, self.secretKey, self.associateTag)
+        urls = []
+        
+        try:
+            urls = GetImageUrls(asin, country, self.accessKey, self.secretKey, self.associateTag)
+
+        except AWSError, e:
+            return TaskResult(None, 1, "can not retrive image urls: {0}".format(e.GetFullDescription()))
         
         if not asin in urls: return TaskResult(None, 1, "can not find image URLs for asin {0}".format(asin))
         
