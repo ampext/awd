@@ -1,8 +1,12 @@
 from PySide import QtCore, QtGui, QtSql
 from datetime import datetime
+from collections import namedtuple
 from aws import AWSError, GetPrice
+
 import helper
 import locale
+
+UpdateResult = namedtuple("UpdateResult", ["total", "changed", "failed", "error"])
 
 def safe_int(str_val, def_val = 0):
     try: return int(str_val)
@@ -14,8 +18,7 @@ def CheckDatabase(filename):
     db = QtSql.QSqlDatabase.addDatabase("QSQLITE")
     db.setDatabaseName(filename)
     
-    if not db.open(): return False
-    return True
+    return db.open()
 
 def SetupDatabase():
     dir = QtCore.QDir()
@@ -82,8 +85,8 @@ def FormatAWSErrors(errors, max_length):
     results = []
 
     for error in errors:
-        if len(error.message) > max_length: results.append(error.message[:max_length] + "...")
-        else: results.append(error.message)
+        if len(error) > max_length: results.append(error[:max_length] + "...")
+        else: results.append(error)
 
     if len(results) > 0: return "\n".join(results)
     return ""
@@ -173,56 +176,47 @@ def FormatPrice(price, country):
 
     return price
 
-def UpdateDatabase(accessKey, secretKey, associateTag):
-    cntr = 0
-    up = 0
-    down = 0
+def UpdateAllItems(accessKey, secretKey, associateTag):   
+    query = QtSql.QSqlQuery()
+    query.exec_("SELECT * FROM main")
     
-    try:
-        query = QtSql.QSqlQuery()
-        query.exec_("SELECT * FROM main")
+    if query.lastError().isValid():
+        return UpdateResult(0, 0, 0, "SQL Error: {0}".format(query.lastError().text()))
+    
+    items = {}
+    total = 0
+    changed = 0
+    
+    while query.next():
+        record = query.record()
+        asin = record.field("asin").value()
+        country = record.field("country").value()
         
-        if query.lastError().isValid(): return [cntr, up, down, "SQL Error: " + query.lastError().text()]
+        if not items.has_key(country): items[country] = []
+        items[country].append(asin)
         
-        items = {}
-        src_set = set()
-        aws_set = set()
-        
-        while query.next():
-            record = query.record()
-            asin = record.field("asin").value()
-            country = record.field("country").value()
-            
-            if not items.has_key(country): items[country] = []
-            items[country].append(asin)
-            
-            src_set.add(asin)
-            
-        all_errors = []
-        
-        for country in items.keys():
+        total += 1
+
+    failed = total
+    all_errors = set()
+    
+    for country in items.keys():
+        try:
             prices, errors = GetPrice(items[country], country, accessKey, secretKey, associateTag)
-            all_errors += errors
+            
+            for e in errors:
+                all_errors.add("response error: {0} ({1})".format(e.message, e.code))
 
             for price in prices:
-                res = UpdateItem(price[0], price[1], price[2])
-                aws_set.add(price[0])
+                if UpdateItem(price[0], price[1], price[2]):
+                    changed += 1
+             
+            failed -= len(prices)
                 
-                if res == -1: down = down + 1
-                elif res == 1: up = up + 1  
-                cntr = cntr + 1
+        except AWSError, e:
+            all_errors.add(e.GetFullDescription())
 
-        for asin in src_set ^ aws_set:
-            UpdateItem(asin, 0, "n/a")
-
-        return [cntr, up, down, FormatAWSErrors(all_errors, 50)]
-    
-    except AWSError, error:
-        error_lst = FormatAWSErrors(error.GetErrors(), 50)
-        error_msg = "Error: " + str(error)
-        
-        if len(error_lst) > 0: error_msg = error_msg + "\n" + error_lst
-        return [cntr, up, down, error_msg]
+    return UpdateResult(total, changed, failed, FormatAWSErrors(all_errors, 100))
     
 def GetMaxItemPrice(asin):
     query = QtSql.QSqlQuery()
@@ -275,23 +269,22 @@ def UpdateItem(asin, price, currency):
     
     if query.lastError().isValid(): raise Exception(query.lastError().text())
     
-    last = 0
+    last_price = 0
     current_price = 0
     
     if query.next(): 
-        last = safe_int(query.record().field("last").value())
+        last_price = safe_int(query.record().field("last").value())
         current_price = safe_int(query.record().field("price").value())
-    if last == 0: last = price
+    if last_price == 0: last_price = price
     if current_price == 0: current_price = price
     
-    isUp = False
-    isDown = False
+    changed = price != current_price
     
     if price < current_price: isDown = True
     if price > current_price: isUp = True
     
     if current_price != price:
-        last = current_price
+        last_price = current_price
         current_price = price
     
     min = GetMinItemPrice(asin)
@@ -300,17 +293,15 @@ def UpdateItem(asin, price, currency):
     query.prepare("UPDATE main SET price = :price, last = :last, min = :min, max = :max, currency = :currency WHERE asin = :asin")
     query.bindValue(":asin", asin)
     query.bindValue(":price", current_price)
-    query.bindValue(":last", last)
+    query.bindValue(":last", last_price)
     query.bindValue(":min", min)
     query.bindValue(":max", max)
     query.bindValue(":currency", currency)
     query.exec_()
 
     if query.lastError().isValid(): raise Exception(query.lastError().text())
-    
-    if isDown: return -1
-    elif isUp: return 1
-    return 0
+
+    return changed
 
 def GetAllItems():
     query = QtSql.QSqlQuery()

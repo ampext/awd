@@ -28,7 +28,7 @@ class AWSError(Exception):
         result = self.text
 
         if self.errors:
-            result += ". Errors: " + ", ".join(list(map(lambda e : "{0} ({1})".format(e.message, e.code), self.errors)))
+            result += ": " + ", ".join(list(map(lambda e : "{0} ({1})".format(e.message, e.code), self.errors)))
 
         return result
 
@@ -103,7 +103,7 @@ def GetPrice(asins, country, accessKey, secretKey, associateTag):
         doc = xml.dom.minidom.parseString(result)
         errors = GetErrorsFromResponse(doc)
 
-        if not IsValidRequest(doc): raise AWSError("Invalid response", request_url, errors)
+        if not IsValidRequest(doc): raise AWSError("invalid request", request_url, errors)
         
         try: prices = prices + GetPricesFromResponse(doc)
         except Exception, e: raise AWSError(str(e), request_url)
@@ -123,7 +123,7 @@ def GetAttributes(asin, country, accessKey, secretKey, associateTag):
     doc = xml.dom.minidom.parseString(result)
     errors = GetErrorsFromResponse(doc)
 
-    if not IsValidRequest(doc): raise AWSError("Invalid request", request_url, errors)
+    if not IsValidRequest(doc): raise AWSError("invalid request", request_url, errors)
     
     try: return GetAttributesFromResponse(doc)
     except Exception, e: raise AWSError(str(e), request_url)
@@ -141,7 +141,7 @@ def GetImageUrls(asin, country, accessKey, secretKey, associateTag):
     doc = xml.dom.minidom.parseString(result)
     errors = GetErrorsFromResponse(doc)
 
-    if not IsValidRequest(doc): raise AWSError("Invalid request", request_url, errors)
+    if not IsValidRequest(doc): raise AWSError("invalid request", request_url, errors)
     
     try: return GetImageUrlsFromResponse(doc)
     except Exception, e: raise AWSError(str(e), request_url)
@@ -190,7 +190,7 @@ def ParseErrorNode(errorNode):
     msgNode = FindChildNode(errorNode, "Message")
     
     if not codeNode or not msgNode: return None
-    return AWSRequestError(GetFirstChildNodeValue(codeNode),GetFirstChildNodeValue(msgNode))
+    return AWSRequestError(GetFirstChildNodeValue(codeNode), GetFirstChildNodeValue(msgNode))
 
 def GetPricesFromResponse(doc):  
     prices = []

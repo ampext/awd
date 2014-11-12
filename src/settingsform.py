@@ -243,7 +243,7 @@ class SettingsForm(QtGui.QDialog):
         self.settings.endGroup()
         
     def OnTestNotification(self):
-        notify.Notify(self.tr("Notification test"), self, self.sendCheck.isChecked())
+        notify.Notify(self.tr("Test action"), self.tr("Notification test"), self, self.sendCheck.isChecked())
         
     def OnClearCache(self):
         self.cache.Clear()

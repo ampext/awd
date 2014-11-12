@@ -328,7 +328,7 @@ class MainForm(QtGui.QMainWindow):
         self.updateThread.start()
 
     def OnUpdateItemsTask(self, abort):
-        result = db.UpdateDatabase(self.accessKey, self.secretKey, self.associateTag)
+        result = db.UpdateAllItems(self.accessKey, self.secretKey, self.associateTag)
         return TaskResult(result, 0, "")
         
     def OnUpdateItemsTaskFinished(self, result):
@@ -345,11 +345,11 @@ class MainForm(QtGui.QMainWindow):
             QtGui.QMessageBox.information(self, self.tr("Fetching error"), result.message)
             return
 
-        self.UpdateItems(result.result[0], result.result[1], result.result[2], result.result[3])
+        self.UpdateItems(result.result.total, result.result.changed, result.result.failed, result.result.error)
         
-    def UpdateItems(self, cntr, up, down, error):
-        if error != "" and cntr == 0:
-            notify.Notify(error, self, self.sysNotify)
+    def UpdateItems(self, total, changed, failed, error):        
+        if error and total == failed:
+            notify.Notify(self.tr("Updating [Failed]"), error, self, self.sysNotify)
             print(error)
             return
 
@@ -360,10 +360,12 @@ class MainForm(QtGui.QMainWindow):
         
         if not self.showNotifications: return
         
-        text = str(cntr) + self.tr(" items have been updated")
-        if error != "": text += "\n" + error
+        if failed > 0: text = self.tr("{0} items have been checked\n{1} changed, {2} failed").format(total, changed, failed)
+        else: text = self.tr("{0} items have been checked\n{1} changed").format(total, changed)
         
-        notify.Notify(text, self, self.sysNotify)
+        if error: text += "\n" + error
+        
+        notify.Notify(self.tr("Updating [Finished]"), text, self, self.sysNotify)
         self.UpdateListView()     
         
     def OnShowSettings(self):
