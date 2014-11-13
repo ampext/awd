@@ -70,7 +70,7 @@ def CreateDatabase(filename):
                                           [price] INTEGER NOT NULL,
                                           [currency] VARCHAR(8) NOT NULL,
                                           [date] VARCHAR(16) NOT NULL)"""
-    query.exec_(query_str)
+    #query.exec_(query_str)
     
     if LastError(query, True): return False
     return True
@@ -132,6 +132,15 @@ def DeleteItem(asin):
 def CheckASIN(asin):
     query = QtSql.QSqlQuery()
     query.prepare("SELECT * FROM main WHERE asin = :asin")
+    query.bindValue(":asin", asin)
+    query.exec_()
+    
+    if query.next(): return True
+    return False
+
+def CheckASINPrices(asin):
+    query = QtSql.QSqlQuery()
+    query.prepare("SELECT * FROM prices WHERE asin = :asin")
     query.bindValue(":asin", asin)
     query.exec_()
     
@@ -217,43 +226,119 @@ def UpdateAllItems(accessKey, secretKey, associateTag):
             all_errors.add(e.GetFullDescription())
 
     return UpdateResult(total, changed, failed, FormatAWSErrors(all_errors, 100))
-    
-def GetMaxItemPrice(asin):
-    query = QtSql.QSqlQuery()
-    query.prepare("SELECT MAX(price) max FROM prices WHERE asin = :asin AND price != 0")
-    query.bindValue(":asin", asin)
-    query.exec_()
-    
-    if query.lastError().isValid(): raise Exception(query.lastError().text())
-    if query.next(): return safe_int(query.record().field("max").value())
-    
-    return 0
 
-def GetMinItemPrice(asin):
-    query = QtSql.QSqlQuery()
-    query.prepare("SELECT MIN(price) min FROM prices WHERE asin = :asin AND price != 0")
-    query.bindValue(":asin", asin)
-    query.exec_()
+def UpdateMainTable():
     
-    if query.lastError().isValid(): raise Exception(query.lastError().text())
-    if query.next(): return safe_int(query.record().field("min").value())
+    try:
+        items = GetAllItems()
         
-    return 0
-    
-def UpdateItem(asin, price, currency):
-    price = int(price)
-    last_price = 0
-    
+        for item in items:
+            title = item[0]
+            asin = item[1]
+            current_price = GetItemPrice(asin)
+            last_price = GetItemLastPrice(asin)
+            min_price = GetItemMinPrice(asin)
+            max_price = GetItemMaxPrice(asin)
+            
+            if current_price < 0 or last_price < 0:
+                print("bad price values for {0} asin".format(asin))
+                current_price = 0
+                last_price = 0
+            
+            print("asin, price, last, min, max -> {0}, {1}, {2}, {3}, {4}".format(asin, current_price, last_price, min_price, max_price))
+            
+            query = QtSql.QSqlQuery()
+            query.prepare("UPDATE main SET price = :price, last = :last, min = :min, max = :max WHERE asin = :asin")
+            query.bindValue(":asin", asin)
+            query.bindValue(":price", current_price)
+            query.bindValue(":last", last_price)
+            query.bindValue(":min", min_price)
+            query.bindValue(":max", max_price)
+            query.exec_()
+
+            if query.lastError().isValid(): raise Exception(query.lastError().text())
+        
+    except Exception, e:
+        print("failed to update main table: {0}".format(str(e)))
+
+def GetItemPrice(asin):
+    """Returns -1 if no price present for specified asin"""
     query = QtSql.QSqlQuery()
     query.prepare("SELECT price, MAX(date) FROM prices WHERE asin = :asin")
     query.bindValue(":asin", asin)
     query.exec_()
     
     if query.lastError().isValid(): raise Exception(query.lastError().text())
-    if query.next() and query.record().field("price").value() != "":
-        last_price = int( query.record().field("price").value())
-        if last_price == price: return 0
 
+    if query.next():
+        if query.record().isNull(0): return -1
+        return safe_int(query.record().field("price").value())
+
+    return 0
+
+def GetItemLastPrice(asin):
+    """Returns -1 if no price present for specified asin"""
+    query = QtSql.QSqlQuery()
+    query.prepare("SELECT price, MAX(date) date FROM prices WHERE asin = :asin")
+    query.bindValue(":asin", asin)
+    query.exec_()
+    
+    if query.lastError().isValid(): raise Exception(query.lastError().text())
+    if not query.next(): return -1
+
+    if query.record().isNull(0): return -1
+
+    current_price = query.record().field("price").value()
+    current_date = query.record().field("date").value()
+    
+    query.prepare("SELECT price, MAX(date) date FROM prices WHERE asin = :asin AND date != :date")
+    query.bindValue(":asin", asin)
+    query.bindValue(":date", current_date)
+    query.exec_()
+    
+    if query.lastError().isValid(): raise Exception(query.lastError().text())
+
+    if query.next():
+        if query.record().isNull(0): return current_price
+        else: return safe_int(query.record().field("price").value())
+
+    return safe_int(current_price)
+    
+def GetItemMaxPrice(asin):
+    query = QtSql.QSqlQuery()
+    query.prepare("SELECT MAX(price) max_price FROM prices WHERE asin = :asin AND price != 0")
+    query.bindValue(":asin", asin)
+    query.exec_()
+    
+    if query.lastError().isValid(): raise Exception(query.lastError().text())
+
+    if query.next():
+        if query.record().isNull(0): return 0
+        return safe_int(query.record().field("max_price").value())
+    
+    return 0
+
+def GetItemMinPrice(asin):
+    query = QtSql.QSqlQuery()
+    query.prepare("SELECT MIN(price) min_price FROM prices WHERE asin = :asin AND price != 0")
+    query.bindValue(":asin", asin)
+    query.exec_()
+    
+    if query.lastError().isValid(): raise Exception(query.lastError().text())
+    if query.next():
+        if query.record().isNull(0): return 0
+        return safe_int(query.record().field("min_price").value())
+
+    return 0
+    
+def UpdateItem(asin, price, currency):
+    current_price = safe_int(price)
+    last_price = GetItemPrice(asin)
+    
+    if last_price < 0: last_price = current_price
+    elif last_price == current_price: return False
+
+    query = QtSql.QSqlQuery()
     query.prepare("INSERT INTO prices (asin, price, currency, date) VALUES(:asin, :price, :currency, :date)")
     query.bindValue(":asin", asin)
     query.bindValue(":price", price)
@@ -263,45 +348,21 @@ def UpdateItem(asin, price, currency):
 
     if query.lastError().isValid(): raise Exception(query.lastError().text())
     
-    query.prepare("SELECT price, last FROM main WHERE asin = :asin")
-    query.bindValue(":asin", asin)
-    query.exec_()
-    
-    if query.lastError().isValid(): raise Exception(query.lastError().text())
-    
-    last_price = 0
-    current_price = 0
-    
-    if query.next(): 
-        last_price = safe_int(query.record().field("last").value())
-        current_price = safe_int(query.record().field("price").value())
-    if last_price == 0: last_price = price
-    if current_price == 0: current_price = price
-    
-    changed = price != current_price
-    
-    if price < current_price: isDown = True
-    if price > current_price: isUp = True
-    
-    if current_price != price:
-        last_price = current_price
-        current_price = price
-    
-    min = GetMinItemPrice(asin)
-    max = GetMaxItemPrice(asin)
+    min_price = GetItemMinPrice(asin)
+    max_price = GetItemMaxPrice(asin)
     
     query.prepare("UPDATE main SET price = :price, last = :last, min = :min, max = :max, currency = :currency WHERE asin = :asin")
     query.bindValue(":asin", asin)
     query.bindValue(":price", current_price)
     query.bindValue(":last", last_price)
-    query.bindValue(":min", min)
-    query.bindValue(":max", max)
+    query.bindValue(":min", min_price)
+    query.bindValue(":max", max_price)
     query.bindValue(":currency", currency)
     query.exec_()
 
     if query.lastError().isValid(): raise Exception(query.lastError().text())
 
-    return changed
+    return True
 
 def GetAllItems():
     query = QtSql.QSqlQuery()

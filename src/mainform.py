@@ -129,6 +129,7 @@ class MainForm(QtGui.QMainWindow):
         if helper.debug_mode:
             self.trayMenu.addSeparator()
             self.trayMenu.addAction(self.builderAction)
+            self.trayMenu.addAction(self.updateMainTable)
         
         self.trayMenu.addSeparator()
         self.trayMenu.addAction(self.aboutAction)
@@ -172,6 +173,9 @@ class MainForm(QtGui.QMainWindow):
         if helper.debug_mode:
             self.builderAction = QtGui.QAction(self.tr("Build request..."), self)
             self.builderAction.triggered.connect(self.OnBuildRequest)
+            
+            self.updateMainTable = QtGui.QAction(self.tr("Update main table"), self)
+            self.updateMainTable.triggered.connect(self.OnUpdateMaintable)
 
     def OnTimer(self):
         self.OnUpdateItems()
@@ -375,6 +379,10 @@ class MainForm(QtGui.QMainWindow):
     def OnBuildRequest(self):
         form = RequestForm(self, self.accessKey, self.secretKey, self.associateTag)
         form.exec_()
+        
+    def OnUpdateMaintable(self):
+        db.UpdateMainTable()
+        self.UpdateListView() 
         
     def SaveSettings(self):
         self.settings.setValue("mainform_size", self.size())

@@ -207,37 +207,20 @@ def GetPricesFromResponse(doc):
         asin = GetFirstChildNodeValue(asinNode)
         if not asin: raise Exception("ASIN node has not value")
         
-        offersNode = FindChildNode(itemNode, "Offers")
-        if not offersNode:
-            itemNode = itemNode.nextSibling
-            continue
-
-        offerNode = FindChildNode(offersNode, "Offer")
-        if not offerNode:
-            itemNode = itemNode.nextSibling
-            continue
+        amount = ""
+        currency = "n/a"
         
-        listingNode = FindChildNode(offerNode, "OfferListing")
-        if not listingNode:
-            itemNode = itemNode.nextSibling
-            continue
+        priceNode = FindNodeByPath(itemNode, "Offers/Offer/OfferListing/Price", True)
+        if priceNode:       
+            amountNode = FindChildNode(priceNode, "Amount")
+            if amountNode:
+                amount = GetFirstChildNodeValue(amountNode)
+            
+            currencyNode = FindChildNode(priceNode, "CurrencyCode")
+            if currencyNode:
+                currency = GetFirstChildNodeValue(currencyNode)
         
-        priceNode = FindChildNode(listingNode, "Price")
-        if not priceNode:
-            itemNode = itemNode.nextSibling
-            continue
-        
-        amountNode = FindChildNode(priceNode, "Amount")
-        if not amountNode:
-            itemNode = itemNode.nextSibling
-            continue
-        
-        currencyNode = FindChildNode(priceNode, "CurrencyCode")
-        if not currencyNode:
-            itemNode = itemNode.nextSibling
-            continue
-        
-        prices.append([asin, GetFirstChildNodeValue(amountNode), GetFirstChildNodeValue(currencyNode)])
+        prices.append([asin, amount, currency])
         
         itemNode = itemNode.nextSibling   
     

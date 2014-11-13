@@ -1,4 +1,5 @@
 from PySide import QtCore, QtGui, QtSql
+from db import safe_int
 
 import db
 import helper
@@ -79,10 +80,10 @@ class ItemModel(QtCore.QAbstractItemModel):
             
             item.asin = record.field("asin").value()
             item.label = record.field("label").value()
-            item.price = int(record.field("price").value())
-            item.priceMin = int(record.field("min").value())
-            item.priceMax = int(record.field("max").value())
-            item.priceLast = int(record.field("last").value())
+            item.price = safe_int(record.field("price").value())
+            item.priceMin = safe_int(record.field("min").value())
+            item.priceMax = safe_int(record.field("max").value())
+            item.priceLast = safe_int(record.field("last").value())
             item.country = record.field("country").value()
             item.priceSeries = db.GetNLastPriceChanges(item.asin, self.nSamples)
             
